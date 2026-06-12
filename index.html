@@ -79,6 +79,29 @@
     line-height: 1.9;
     text-align: right;
   }
+
+  /* character select */
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 10px 0 4px;
+  }
+  .char-opt {
+    background: #f6f7ff;
+    border: 3px solid #e3e6ff;
+    border-radius: 14px;
+    padding: 8px 4px 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: .85rem;
+    color: var(--ink);
+    transition: transform .1s;
+  }
+  .char-opt:hover { transform: scale(1.05); }
+  .char-opt img { width: 52px; height: 80px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
+  .char-opt.selected { border-color: var(--accent); background: #fff0f4; box-shadow: 0 0 0 3px rgba(255,107,139,.25); }
   kbd {
     background: #2b2b45; color: #fff;
     border-radius: 6px; padding: 2px 9px;
@@ -229,6 +252,8 @@
       <kbd>X</kbd> <b>לשאוף אויב</b> 🌀 ואז <kbd>X</kbd> שוב <b>לירות כוכב!</b> ⭐<br>
       📱 בנייד — כפתורי מגע על המסך
     </div>
+    <div style="font-weight:800;margin-top:4px">בחרו דמות:</div>
+    <div class="char-grid" id="char-grid"></div>
     <input type="text" id="player-name" maxlength="20" placeholder="איך קוראים לך?">
     <br>
     <button class="btn" onclick="startGame()">מתחילים את כיתה א'! 🚀</button>
@@ -290,7 +315,7 @@
 /* ================================================================
    state & screens
 ================================================================ */
-const state = { name: "", unlocked: 0, stars: [0,0,0,0,0,0], current: 0 };
+const state = { name: "", unlocked: 0, stars: [0,0,0,0,0,0], current: 0, charIdx: 0 };
 const $ = sel => document.querySelector(sel);
 
 function showScreen(id) {
@@ -300,12 +325,16 @@ function showScreen(id) {
 }
 
 function saveProgress() {
-  try { localStorage.setItem("bq-save", JSON.stringify({ name: state.name, unlocked: state.unlocked, stars: state.stars })); } catch (e) {}
+  try { localStorage.setItem("bq-save", JSON.stringify({ name: state.name, unlocked: state.unlocked, stars: state.stars, charIdx: state.charIdx })); } catch (e) {}
 }
 function loadProgress() {
   try {
     const s = JSON.parse(localStorage.getItem("bq-save"));
-    if (s && s.stars) { state.name = s.name; state.unlocked = s.unlocked; state.stars = s.stars; $("#player-name").value = s.name || ""; }
+    if (s && s.stars) {
+      state.name = s.name; state.unlocked = s.unlocked; state.stars = s.stars;
+      state.charIdx = s.charIdx || 0;
+      $("#player-name").value = s.name || "";
+    }
   } catch (e) {}
 }
 function resetAll() {
@@ -323,9 +352,9 @@ const LEVELS = [
     goal: "אספו 8 מסכות 😷 בדרך לבית הספר, היזהרו מהוירוסים 🦠 — ואפשר לשאוף אותם ולירות כוכבים!"
   },
   {
-    grade: "כיתה ב'", emoji: "💉", name: "מומחי הקורונה הקטנים",
-    story: `עדיין קורונה, עדיין טלי! הפכתם למומחים קטנים: תו ירוק, חיסונים, דלתא ואומיקרון. הנס הגדול — חזרתם לבית הספר! אמנם עם מסכה, אבל ביחד.`,
-    goal: "אספו 8 חיסונים 💉 — אבל עכשיו מסתובבים גם דלתא וגם אומיקרון... 🦠🧟"
+    grade: "כיתה ב'", emoji: "🏄", name: "גולשים מהסגר",
+    story: `עדיין קורונה, עדיין טלי! תו ירוק, דלתא ואומיקרון. ובסגר אסור להתרחק מהבית יותר מ-100 מטר... אבל הגלים קוראים! יצאתם לגלוש בים — ועכשיו סירת המשטרה בדרך אליכם.`,
+    goal: "גלשו אל החוף! קפצו עם רווח 🏄 מעל סלעים, מצופים וכרישים — כל פגיעה מאטה אתכם והשוטרים מתקרבים! 🚤👮"
   },
   {
     grade: "כיתה ג'", emoji: "🚌", name: "שפיות זמנית",
@@ -333,9 +362,9 @@ const LEVELS = [
     goal: "שנה נורמלית! אספו את 6 חוויות השנה: 🚌 🐄 🤡 🍷 🔥 🎉 — רק תיזהרו מהדבורים של החווה 🐝"
   },
   {
-    grade: "כיתה ד'", emoji: "🚨", name: "הנאצ'וס והאזעקות",
-    story: `התחלתם נורמלי, וחודש אחרי הגיע השביעי באוקטובר. הלו"ז החדש: אזעקות, ממ"דים ומקלטים — אבל גם יום הנאצ'וס הבינלאומי שמדו ארגנה, ודוכן מיצים לקהילה.`,
-    goal: "אספו 8 נאצ'וס 🌮 בזמן שטילים נופלים מהשמיים! 🚀 שימו לב לסימן האזהרה ⚠️ וזוזו מהר!"
+    grade: "כיתה ד'", emoji: "🚨", name: "סולמות, טילים וממ\"דים",
+    story: `התחלתם נורמלי, וחודש אחרי הגיע השביעי באוקטובר. הלו"ז החדש: אזעקות, ממ"דים ומקלטים — אבל גם יום הנאצ'וס הבינלאומי שמדו ארגנה, ומשחקי קופסה. המון משחקי קופסה.`,
+    goal: "משחק לוח! הטילו קוביה 🎲 והגיעו למסיבת הסיום. דרכתם על טיל 🚀 או אזעקה 🚨? חוזרים אחורה לממ\"ד הקרוב 🛡️! נאצ'וס 🌮 = מתקדמים 3 צעדים!"
   },
   {
     grade: "כיתה ה'", emoji: "🎬", name: "כוכבי קולנוע וטילים מאיראן",
@@ -694,16 +723,9 @@ const WORLDS = [
     items: [[330, 320], [590, 250], [900, 300], [1200, 220], [760, 430], [1400, 430], [1700, 310], [2010, 230], [2200, 430], [2460, 300]],
     enemies: [[420, 0, "walk"], [950, 0, "walk"], [1750, 0, "walk"], [2450, 0, "walk"], [1300, 280, "fly"], [2100, 300, "fly"]]
   },
-  { // 2 — vaccines
-    width: 3100,
-    sky: ["#d3f1ff", "#fff3c9"], hills: "#8fd3b6", ground: "#d9a05b", groundTop: "#69bd45",
-    deco: ["🌼", "🍄", "🌳"],
-    item: "💉", need: 8,
-    enemy: { walk: "🧟", fly: "🦠" },
-    grounds: [[0, 540], [640, 1280], [1380, 1980], [2090, 2620], [2700, 3100]],
-    plats: [[280, 350, 120], [500, 280, 110], [800, 330, 130], [1100, 250, 120], [1500, 340, 140], [1800, 260, 120], [2200, 330, 140], [2480, 250, 120]],
-    items: [[310, 310], [550, 240], [850, 290], [1150, 210], [1550, 300], [1850, 220], [2250, 290], [2530, 210], [950, 430], [2350, 430]],
-    enemies: [[400, 0, "walk"], [900, 0, "walk"], [1600, 0, "walk"], [2300, 0, "walk"], [2800, 0, "walk"], [1200, 280, "fly"], [1900, 290, "fly"], [2550, 270, "fly"]]
+  { // 2 — surf escape from the police
+    surf: true,
+    sky: ["#7ec8f7", "#d9f2ff"]
   },
   { // 3 — normal year (easier, collect 6 unique)
     width: 3000,
@@ -716,17 +738,9 @@ const WORLDS = [
     items: [[400, 310], [1050, 300], [1400, 220], [1900, 300], [2200, 220], [2600, 300]],
     enemies: [[1100, 0, "walk"], [2000, 0, "walk"], [1500, 280, "fly"], [2650, 290, "fly"]]
   },
-  { // 4 — rockets + nachos
-    width: 3100,
-    sky: ["#ffd2a8", "#ffeede"], hills: "#c98c5a", ground: "#b07748", groundTop: "#8f9d4e",
-    deco: ["🏠", "🌵", "🪨"],
-    item: "🌮", need: 8,
-    enemy: { walk: "🤖", fly: "🛩️" },
-    rockets: 3.2,
-    grounds: [[0, 560], [660, 1300], [1400, 2000], [2110, 2640], [2720, 3100]],
-    plats: [[300, 350, 120], [520, 280, 110], [820, 330, 130], [1120, 250, 120], [1520, 340, 140], [1820, 260, 120], [2220, 330, 140], [2500, 250, 120]],
-    items: [[330, 310], [570, 240], [870, 290], [1170, 210], [1570, 300], [1870, 220], [2270, 290], [2550, 210], [980, 430], [2380, 430]],
-    enemies: [[450, 0, "walk"], [1000, 0, "walk"], [1700, 0, "walk"], [2400, 0, "walk"], [1250, 280, "fly"], [2050, 290, "fly"]]
+  { // 4 — snakes & ladders board with rockets and shelters
+    board: true,
+    sky: ["#ffd2a8", "#ffeede"]
   },
   { // 5 — movie + rockets harder
     width: 3300,
@@ -803,6 +817,10 @@ bindTouch("#tc-suck", "suck");
 
 function startEngine(levelIdx) {
   const world = WORLDS[levelIdx];
+
+  if (world.surf) { startSurf(world); return; }
+  if (world.board) { startBoard(world); return; }
+
   const plats = groundsToPlats(world.grounds).concat(
     world.plats.map(([x, y, w]) => ({ x, y, w, h: 18 }))
   );
@@ -861,6 +879,399 @@ function makeEnemy(world, x, y, type) {
   };
 }
 
+/* ================================================================
+   SURF GAME (grade 2): escape the police boat on a surfboard
+================================================================ */
+function startSurf(world) {
+  game = {
+    mode: "surf", world,
+    time: 0, dist: 0,
+    py: 398, vy: 0, onWater: true,
+    obstacles: [], spawnT: 1.4,
+    gap: 270, hits: 0, inv: 0,
+    parts: [], over: false
+  };
+  lastT = performance.now();
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
+}
+
+function updateSurf(dt) {
+  const g = game;
+  g.time += dt;
+  if (g.inv > 0) g.inv -= dt;
+  g.dist += dt * (100 / 45);
+
+  /* jump over obstacles */
+  if (jumpPressed) {
+    if (g.onWater) {
+      g.vy = -660; g.onWater = false;
+      playSound("jump");
+      spawnBurst(300, 410, "💦", 4);
+    }
+    jumpPressed = false;
+  }
+  jumpPressed = false;
+  if (!g.onWater) {
+    g.vy += 1900 * dt;
+    g.py += g.vy * dt;
+    if (g.py >= 398) { g.py = 398; g.vy = 0; g.onWater = true; spawnBurst(300, 412, "💦", 5); }
+  } else {
+    g.py = 398 + Math.sin(g.time * 3) * 5;
+  }
+
+  /* obstacles drift toward the surfer */
+  g.spawnT -= dt;
+  if (g.spawnT <= 0) {
+    g.spawnT = 1.05 + Math.random() * 0.85 - Math.min(.3, g.dist / 280);
+    const types = ["🪨", "🛟", "🦈"];
+    g.obstacles.push({ x: W + 60, type: types[Math.floor(Math.random() * 3)], t: Math.random() * 6, bob: 0 });
+  }
+  for (const o of g.obstacles) {
+    o.x -= 330 * dt;
+    o.t += dt;
+    if (o.type === "🦈") o.bob = Math.sin(o.t * 4) * 6;
+    if (g.inv <= 0 && Math.abs(o.x - 300) < 30 && g.py > 358) {
+      o.hit = true; g.hits++; g.gap -= 75; g.inv = 1.2;
+      playSound("hit");
+      spawnBurst(o.x, 405, "💥", 6);
+    }
+  }
+  g.obstacles = g.obstacles.filter(o => !o.hit && o.x > -60);
+
+  /* the police slowly fall behind, but every hit brings them closer */
+  g.gap = Math.min(290, g.gap + 7 * dt);
+  if (g.gap <= 55) {
+    g.over = true;
+    levelLost(`המשטרה תפסה אתכם בים! דו"ח על הפרת סגר... אבל היה שווה 🏄`);
+    return;
+  }
+  if (g.dist >= 100) {
+    g.over = true;
+    const stars = g.hits === 0 ? 3 : g.hits <= 2 ? 2 : 1;
+    levelWon(stars, "הגעתם לחוף וברחתם מהשוטרים! גלשתם כמו מקצוענים — רק אל תספרו לטלי 🏄💚");
+    return;
+  }
+
+  for (const pt of g.parts) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 300 * dt; pt.life -= dt; }
+  g.parts = g.parts.filter(pt => pt.life > 0);
+}
+
+function drawSurf() {
+  const g = game;
+
+  /* sky + sun + clouds */
+  const grad = ctx.createLinearGradient(0, 0, 0, 410);
+  grad.addColorStop(0, "#6ec0f5"); grad.addColorStop(1, "#d9f2ff");
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 410);
+  ctx.fillStyle = "rgba(255,228,120,.3)";
+  ctx.beginPath(); ctx.arc(110, 80, 50, 0, 6.29); ctx.fill();
+  ctx.fillStyle = "#ffd93d";
+  ctx.beginPath(); ctx.arc(110, 80, 30, 0, 6.29); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  for (let i = 0; i < 3; i++) {
+    const cx2 = ((i * 340 - g.time * 18) % (W + 200) + W + 200) % (W + 200) - 100;
+    ctx.beginPath();
+    ctx.ellipse(cx2, 70 + i * 38, 44, 13, 0, 0, 6.29);
+    ctx.ellipse(cx2 + 26, 60 + i * 38, 28, 11, 0, 0, 6.29);
+    ctx.fill();
+  }
+
+  /* sea */
+  const sea = ctx.createLinearGradient(0, 405, 0, H);
+  sea.addColorStop(0, "#2f9fd0"); sea.addColorStop(1, "#1a6e9e");
+  ctx.fillStyle = sea; ctx.fillRect(0, 405, W, H - 405);
+  ctx.strokeStyle = "rgba(255,255,255,.35)";
+  ctx.lineWidth = 3;
+  for (let row = 0; row < 3; row++) {
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 16) {
+      const y = 425 + row * 38 + Math.sin(x * .04 + g.time * 2.5 + row) * 4;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  /* the beach appears near the finish */
+  if (g.dist > 84) {
+    const t = (g.dist - 84) / 16;
+    const bx = W - t * 330;
+    ctx.fillStyle = "#eed9a4";
+    ctx.beginPath();
+    ctx.moveTo(W, 405); ctx.lineTo(bx, 405);
+    ctx.quadraticCurveTo(bx + 110, 460, W, 480);
+    ctx.closePath(); ctx.fill();
+    ctx.font = "34px serif"; ctx.textAlign = "center";
+    ctx.fillText("🏖️", Math.min(W - 50, bx + 150), 400);
+  }
+
+  /* police boat behind the surfer */
+  const bx = 300 - g.gap;
+  ctx.save();
+  ctx.translate(bx, 404 + Math.sin(g.time * 2.6) * 4);
+  ctx.fillStyle = "#dfe3e8";
+  ctx.beginPath();
+  ctx.moveTo(-58, 0); ctx.lineTo(58, 0); ctx.lineTo(44, 22); ctx.lineTo(-50, 22);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#3457a0"; ctx.fillRect(-58, 6, 116, 7);
+  ctx.fillStyle = "#c9cdd4"; ctx.fillRect(-30, -22, 44, 22);
+  ctx.fillStyle = Math.floor(g.time * 6) % 2 ? "#e8252c" : "#2a6df0";
+  ctx.fillRect(-14, -30, 12, 8);
+  ctx.font = "24px serif"; ctx.textAlign = "center";
+  ctx.fillText("👮", 28, -4);
+  ctx.fillText("👮", -38, -2);
+  ctx.restore();
+  ctx.font = "700 14px Rubik";
+  ctx.fillStyle = "#fff";
+  ctx.fillText("עצרו!", bx - 14, 340 + Math.sin(g.time * 5) * 4);
+
+  /* surfer on her board */
+  if (!(g.inv > 0 && Math.floor(g.inv * 12) % 2 === 0)) {
+    ctx.fillStyle = "#e8702a";
+    roundRect(300 - 30, g.py + 2, 60, 9, 5);
+    ctx.fillStyle = "#f4934f";
+    roundRect(300 - 30, g.py + 2, 60, 4, 4);
+    const spr = getSprite(g.onWater ? "idle" : "air", "normal");
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(spr, 300 - 26, g.py - 78, 52, 80);
+    ctx.restore();
+  }
+
+  /* obstacles */
+  ctx.font = "36px serif"; ctx.textAlign = "center";
+  for (const o of g.obstacles) ctx.fillText(o.type, o.x, 416 + (o.bob || 0));
+
+  /* particles */
+  for (const pt of g.parts) {
+    ctx.font = pt.size + "px serif";
+    ctx.globalAlpha = Math.max(0, pt.life * 2);
+    ctx.fillText(pt.emoji, pt.x, pt.y);
+    ctx.globalAlpha = 1;
+  }
+
+  /* HUD */
+  ctx.fillStyle = "rgba(13,16,38,.5)";
+  roundRect(10, 8, W - 20, 46, 14);
+  ctx.textAlign = "center";
+  ctx.font = "700 17px Rubik";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
+  /* progress to the beach */
+  ctx.textAlign = "left";
+  ctx.direction = "ltr";
+  ctx.fillText(`🏖️ ${Math.min(100, Math.floor(g.dist))}%`, 26, 39);
+  ctx.direction = "inherit";
+  /* police distance meter */
+  const meterW = 130, mx = W - 160;
+  ctx.fillStyle = "rgba(255,255,255,.3)";
+  roundRect(mx, 22, meterW, 14, 7);
+  const frac = Math.max(0, (g.gap - 55) / (290 - 55));
+  ctx.fillStyle = frac < .3 ? "#ff5e5e" : frac < .6 ? "#ffd93d" : "#4ecb71";
+  roundRect(mx, 22, Math.max(10, meterW * frac), 14, 7);
+  ctx.font = "16px serif";
+  ctx.textAlign = "right";
+  ctx.fillText("🚤", W - 24, 38);
+}
+
+/* ================================================================
+   BOARD GAME (grade 4): snakes & ladders with rockets and shelters
+================================================================ */
+const BOARD_N = 36;
+const BOARD_ROCKETS = { 5: "🚀", 14: "🚨", 22: "🚀", 29: "🚨", 33: "🚀" };
+const BOARD_SHELTERS = [3, 9, 16, 25, 31];
+const BOARD_NACHOS = [4, 11, 19, 26];
+
+function boardTilePos(i) {
+  const r = Math.floor(i / 6), c = i % 6;
+  const col = r % 2 === 0 ? c : 5 - c;
+  return [110 + col * 148, 445 - r * 70];
+}
+
+function startBoard(world) {
+  game = {
+    mode: "board", world,
+    time: 0, pos: 0, rolls: 0,
+    dice: null, diceAnim: 0,
+    queue: [], stepT: 0, resolveOnLand: true,
+    msg: "לחצו על המסך או על רווח כדי להטיל קוביה!", msgT: 99,
+    parts: [], over: false, phase: "idle"
+  };
+  lastT = performance.now();
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
+}
+
+function boardRoll() {
+  const g = game;
+  if (!g || g.mode !== "board" || g.phase !== "idle" || g.over) return;
+  g.phase = "dice";
+  g.diceAnim = 0.7;
+  g.rolls++;
+  playSound("good");
+}
+
+function boardResolve() {
+  const g = game, p = g.pos;
+  if (p >= BOARD_N - 1) {
+    g.over = true;
+    const stars = g.rolls <= 9 ? 3 : g.rolls <= 13 ? 2 : 1;
+    setTimeout(() => levelWon(stars,
+      `הגעתם למסיבת הסיום ב-${g.rolls} הטלות! שרדתם את שנת האזעקות עם נאצ'וס ביד 🌮`), 500);
+    return;
+  }
+  if (g.resolveOnLand && BOARD_ROCKETS[p]) {
+    playSound("siren");
+    const shelter = [...BOARD_SHELTERS].reverse().find(s => s < p) ?? 0;
+    g.msg = `${BOARD_ROCKETS[p]} אזעקה! חוזרים לממ"ד הקרוב! 🛡️`;
+    g.msgT = 3;
+    g.queue = [];
+    for (let i = p - 1; i >= shelter; i--) g.queue.push(i);
+    g.resolveOnLand = false;
+    g.phase = "move"; g.stepT = .22;
+    spawnBurst(...boardTilePos(p), "💥", 6);
+    return;
+  }
+  if (g.resolveOnLand && BOARD_NACHOS.includes(p)) {
+    playSound("good");
+    g.msg = "🌮 נאצ'וס! מתקדמים 3 צעדים!";
+    g.msgT = 3;
+    g.queue = [];
+    for (let i = p + 1; i <= Math.min(p + 3, BOARD_N - 1); i++) g.queue.push(i);
+    g.phase = "move"; g.stepT = .22;
+    return;
+  }
+  if (!g.resolveOnLand) { g.msg = "🛡️ בטוחים בממ\"ד! ממשיכים."; g.msgT = 3; }
+  g.resolveOnLand = true;
+  g.phase = "idle";
+}
+
+function updateBoard(dt) {
+  const g = game;
+  g.time += dt;
+  if (g.msgT > 0) g.msgT -= dt;
+
+  if (jumpPressed) { jumpPressed = false; boardRoll(); }
+  jumpPressed = false;
+
+  if (g.phase === "dice") {
+    g.diceAnim -= dt;
+    g.dice = 1 + Math.floor(Math.random() * 6);
+    if (g.diceAnim <= 0) {
+      g.queue = [];
+      for (let i = g.pos + 1; i <= Math.min(g.pos + g.dice, BOARD_N - 1); i++) g.queue.push(i);
+      g.resolveOnLand = true;
+      g.phase = "move";
+      g.stepT = .22;
+    }
+  } else if (g.phase === "move") {
+    g.stepT -= dt;
+    if (g.stepT <= 0) {
+      if (g.queue.length) {
+        g.pos = g.queue.shift();
+        g.stepT = .22;
+        playSound("puff");
+      }
+      if (!g.queue.length) boardResolve();
+    }
+  }
+
+  for (const pt of g.parts) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 300 * dt; pt.life -= dt; }
+  g.parts = g.parts.filter(pt => pt.life > 0);
+}
+
+function drawBoard() {
+  const g = game;
+
+  /* warm room background */
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, "#ffd2a8"); grad.addColorStop(1, "#ffeede");
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+  /* board mat */
+  ctx.fillStyle = "#a9794b";
+  roundRect(28, 60, 904, 426, 18);
+  ctx.fillStyle = "#fdf6e3";
+  roundRect(36, 67, 888, 412, 14);
+
+  /* tiles */
+  for (let i = 0; i < BOARD_N; i++) {
+    const [tx, ty] = boardTilePos(i);
+    let fill = i % 2 ? "#f7e6c4" : "#fdf0d5";
+    if (BOARD_ROCKETS[i]) fill = "#ffd9d2";
+    if (BOARD_SHELTERS.includes(i)) fill = "#d6ead9";
+    if (BOARD_NACHOS.includes(i)) fill = "#ffe9b8";
+    if (i === 0) fill = "#d8e6f5";
+    if (i === BOARD_N - 1) fill = "#e8d8f5";
+    ctx.fillStyle = "rgba(0,0,0,.1)";
+    roundRect(tx - 64, ty - 24, 132, 54, 9);
+    ctx.fillStyle = fill;
+    roundRect(tx - 66, ty - 27, 132, 54, 9);
+    ctx.font = "700 12px Rubik";
+    ctx.fillStyle = "rgba(43,43,69,.55)";
+    ctx.textAlign = "left";
+    ctx.fillText(i + 1, tx - 58, ty - 13);
+    ctx.textAlign = "center";
+    ctx.font = "22px serif";
+    const icon = i === 0 ? "🏫" : i === BOARD_N - 1 ? "🎉"
+      : BOARD_ROCKETS[i] || (BOARD_SHELTERS.includes(i) ? "🛡️" : BOARD_NACHOS.includes(i) ? "🌮" : "");
+    if (icon) ctx.fillText(icon, tx + 12, ty + 9);
+  }
+
+  /* token: the heroine standing on her tile */
+  const [px2, py2] = boardTilePos(g.pos);
+  const hop = g.phase === "move" ? Math.abs(Math.sin(g.stepT / .22 * Math.PI)) * 10 : Math.sin(g.time * 3) * 2;
+  ctx.fillStyle = "rgba(0,0,0,.2)";
+  ctx.beginPath(); ctx.ellipse(px2 - 30, py2 + 20, 12, 4, 0, 0, 6.29); ctx.fill();
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(getSprite("idle", "normal"), px2 - 47, py2 - 33 - hop, 34, 52);
+  ctx.restore();
+
+  /* particles */
+  for (const pt of g.parts) {
+    ctx.font = pt.size + "px serif";
+    ctx.globalAlpha = Math.max(0, pt.life * 2);
+    ctx.fillText(pt.emoji, pt.x, pt.y);
+    ctx.globalAlpha = 1;
+  }
+
+  /* HUD */
+  ctx.fillStyle = "rgba(13,16,38,.5)";
+  roundRect(10, 8, W - 20, 46, 14);
+  ctx.textAlign = "center";
+  ctx.font = "700 17px Rubik";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
+  ctx.textAlign = "left";
+  ctx.direction = "ltr";
+  ctx.fillText(`🎲 ${g.rolls}`, 26, 39);
+  ctx.direction = "inherit";
+
+  /* dice */
+  ctx.fillStyle = "#fff";
+  roundRect(W - 78, H - 78, 58, 58, 12);
+  ctx.strokeStyle = "#caa977"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W - 78, H - 78, 58, 58, 12) : 0; ctx.stroke();
+  ctx.fillStyle = "#2b2b45";
+  ctx.font = "800 30px Rubik";
+  ctx.textAlign = "center";
+  ctx.fillText(g.dice ?? "?", W - 49, H - 38);
+
+  /* message strip */
+  const msg = g.msgT > 0 ? g.msg : (g.phase === "idle" ? "לחצו על המסך או על רווח כדי להטיל קוביה! 🎲" : "");
+  if (msg) {
+    ctx.fillStyle = "rgba(13,16,38,.55)";
+    roundRect(W / 2 - 240, H - 44, 480, 34, 12);
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 16px Rubik";
+    ctx.fillText(msg, W / 2, H - 21);
+  }
+}
+
+/* tap anywhere on the canvas rolls the dice in the board game */
+cv.addEventListener("pointerdown", () => { if (game && game.mode === "board") boardRoll(); });
+
 /* ---------------- update ---------------- */
 function loop(now) {
   if (!game) return;
@@ -872,6 +1283,8 @@ function loop(now) {
 }
 
 function update(dt) {
+  if (game.mode === "surf") { updateSurf(dt); return; }
+  if (game.mode === "board") { updateBoard(dt); return; }
   const g = game, p = g.player, world = g.world;
   g.time += dt;
   p.anim += dt;
@@ -1120,6 +1533,8 @@ function spawnBurst(x, y, emoji, n) {
 
 /* ---------------- draw ---------------- */
 function draw() {
+  if (game.mode === "surf") { drawSurf(); return; }
+  if (game.mode === "board") { drawBoard(); return; }
   const g = game, world = g.world, p = g.player;
 
   /* sky */
@@ -1304,126 +1719,201 @@ function roundRect(x, y, w, h, r) {
    suit, white top, black shoes (modeled on the reference sheet)
 ================================================================ */
 const SPR_W = 26, SPR_H = 40;
-const PAL = {
-  H: "#15151c",  // hair base
-  G: "#30303e",  // hair shine
-  S: "#e2a87c",  // skin
-  T: "#c08456",  // skin shadow
-  N: "#2a3253",  // suit navy
-  D: "#1d2440",  // lapels / fabric shadow
-  L: "#414b78",  // pinstripe highlight
-  W: "#f2efe7",  // white top
-  V: "#d9d5c9",  // white top shadow
-  K: "#0d0d12",  // heels
-  E: "#181820",  // eyes
-  B: "#2a1d12",  // brows
-  O: "#f4f1ea",  // eye glint
-  M: "#a85a52",  // lips
-  R: "#d9d9e2"   // earring
+
+/* the four playable heroines, modeled on the reference sheets */
+const CHARACTERS = [
+  {
+    name: "עינב", emoji: "💼",
+    skin: "#e2a87c", skinSh: "#c08456",
+    hair: "#15151c", hairShine: "#30303e",
+    pants: "#2a3253", pantsSh: "#1d2440",
+    shoes: "heel", style: "suit"
+  },
+  {
+    name: "אורית", emoji: "🕶️",
+    skin: "#dba06e", skinSh: "#b9804e",
+    hair: "#bdbdc2", hairShine: "#e2e2e6", hairDark: "#90909a",
+    pants: "#17171c", pantsSh: "#0d0d10",
+    shoes: "boot", style: "curly", sunglasses: true,
+    top: "#1f6e85", topSh: "#15505f"
+  },
+  {
+    name: "מדו", emoji: "⚽",
+    skin: "#e2a87c", skinSh: "#c08456",
+    hair: "#15151c", hairShine: "#30303e",
+    pants: "#f2efe7", pantsSh: "#d9d5c9",
+    shoes: "flat", style: "football"
+  },
+  {
+    name: "טלי", emoji: "😷",
+    skin: "#e8b48a", skinSh: "#c69468",
+    hair: "#d9b96a", hairShine: "#eed694", hairDark: "#b3924a",
+    pants: "#17171c", pantsSh: "#0d0d10",
+    shoes: "flat", style: "mask",
+    top: "#df8fb8", topPat: "#eeb6d3"
+  }
+];
+
+const FIXED = {
+  W: "#f2efe7", V: "#d9d5c9", K: "#0d0d12",
+  E: "#181820", B: "#2a1d12", M: "#a85a52", R: "#d9d9e2",
+  GOLD: "#e0b33c", RED: "#b03030", STRIPE: "#414b78"
 };
 const SPRITES = {};
 
-function buildSprite(legs, face) {
+function buildSprite(ci, legs, face) {
+  const ch = CHARACTERS[ci];
   const c = document.createElement("canvas");
   c.width = SPR_W; c.height = SPR_H;
   const g = c.getContext("2d");
-  const px = (x, y, w, h, col) => { g.fillStyle = PAL[col]; g.fillRect(x, y, w, h); };
+  const px = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const P = ch.pants, PS = ch.pantsSh, S = ch.skin, T = ch.skinSh;
+  const H = ch.hair, G = ch.hairShine;
+  const { W, V, K, E, B, M, R, GOLD, RED, STRIPE } = FIXED;
 
-  /* legs (straight suit trousers, shaded inner edge) + black pumps */
-  if (legs === "air") {
-    px(10, 27, 3, 6, "N"); px(12, 27, 1, 6, "D");
-    px(14, 27, 3, 6, "N"); px(16, 27, 1, 6, "D");
-    px(9, 33, 5, 2, "K"); px(13, 33, 5, 2, "K");
-  } else if (legs === "walk1") {
-    px(8, 27, 3, 9, "N"); px(10, 27, 1, 9, "D");
-    px(16, 27, 3, 9, "N"); px(18, 27, 1, 9, "D");
-    px(7, 36, 5, 2, "K"); px(8, 38, 1, 1, "K");
-    px(15, 36, 5, 2, "K"); px(16, 38, 1, 1, "K");
-  } else if (legs === "walk2") {
-    px(11, 27, 2, 9, "N");
-    px(14, 27, 2, 9, "N"); px(15, 27, 1, 9, "D");
-    px(10, 36, 4, 2, "K"); px(11, 38, 1, 1, "K");
-    px(13, 36, 4, 2, "K"); px(14, 38, 1, 1, "K");
-  } else { /* idle */
-    px(10, 27, 3, 9, "N"); px(12, 27, 1, 9, "D");
-    px(14, 27, 3, 9, "N"); px(16, 27, 1, 9, "D");
-    px(9, 36, 5, 2, "K"); px(10, 38, 1, 1, "K");
-    px(13, 36, 5, 2, "K"); px(14, 38, 1, 1, "K");
-  }
-  /* trouser pinstripes */
-  if (legs !== "air") for (const r of [28, 30, 32, 34]) { px(11, r, 1, 1, "L"); px(15, r, 1, 1, "L"); }
-
-  /* hips */
-  px(9, 24, 9, 3, "N");
-  px(9, 24, 1, 3, "D"); px(17, 24, 1, 3, "D");
-
-  /* shoulders + jacket */
-  px(7, 13, 12, 1, "N");
-  px(8, 14, 11, 10, "N");
-  /* white camisole in the open jacket (wide at chest, narrow at waist) */
-  px(12, 13, 3, 1, "W");
-  px(11, 14, 5, 4, "W");
-  px(12, 18, 3, 3, "W");
-  px(12, 19, 1, 2, "V");
-  px(13, 21, 1, 1, "W");
-  /* dark lapels framing the opening */
-  px(11, 13, 1, 1, "D"); px(15, 13, 1, 1, "D");
-  px(10, 14, 1, 4, "D"); px(16, 14, 1, 4, "D");
-  px(11, 18, 1, 3, "D"); px(15, 18, 1, 3, "D");
-  px(12, 21, 1, 1, "D"); px(14, 21, 1, 1, "D");
-  /* jacket pinstripes (dotted) */
-  for (const r of [15, 17, 19, 21, 23]) { px(9, r, 1, 1, "L"); px(17, r, 1, 1, "L"); }
-
-  /* arms + hands */
-  px(5, 14, 2, 9, "N"); px(19, 14, 2, 9, "N");
-  px(6, 14, 1, 9, "D"); px(19, 14, 1, 9, "D");
-  px(5, 23, 2, 2, "S"); px(19, 23, 2, 2, "S");
-
-  /* neck */
-  px(12, 12, 3, 1, "S");
-
-  /* head: crown, face, hair framing, back hair */
-  px(11, 0, 5, 1, "H");
-  px(9, 1, 9, 1, "H");
-  px(8, 2, 10, 2, "H");
-  px(10, 4, 7, 8, "S");
-  px(8, 3, 2, 10, "H"); px(17, 3, 2, 10, "H");
-  px(7, 5, 1, 9, "H"); px(19, 5, 1, 9, "H");
-  /* hair shine (side part) */
-  px(14, 1, 2, 1, "G"); px(16, 2, 1, 2, "G"); px(17, 4, 1, 3, "G");
-  /* brows */
-  px(11, 6, 2, 1, "B"); px(14, 6, 2, 1, "B");
-  /* eyes — almond shaped, subtle */
-  px(11, 7, 2, 1, "E"); px(14, 7, 2, 1, "E");
-  px(11, 8, 2, 1, "T"); px(14, 8, 2, 1, "T");
-  /* earring */
-  px(17, 8, 1, 1, "R");
-  /* nose + cheek shading */
-  px(13, 9, 1, 1, "T");
-  px(10, 9, 1, 1, "T"); px(16, 9, 1, 1, "T");
-  /* mouth by state */
-  if (face === "inhale") {
-    px(12, 9, 3, 2, "E");
-  } else if (face === "full") {
-    px(9, 7, 1, 3, "S"); px(17, 7, 1, 3, "S");
-    px(13, 10, 1, 1, "M");
+  /* ---- legs: geometry per pose, then style-specific shoes ---- */
+  const air = legs === "air";
+  const lw = legs === "walk2" ? 2 : 3;
+  const [lx, rx] = legs === "walk1" ? [8, 16] : legs === "walk2" ? [11, 14] : [10, 14];
+  const legBot = air ? 32 : 35;
+  if (ch.style === "football") {
+    /* white shorts, bare legs, white socks */
+    for (const x0 of [lx, rx]) {
+      px(x0, 27, lw, 2, P); px(x0 + lw - 1, 27, 1, 2, PS);
+      px(x0, 29, lw, air ? 2 : 3, S);
+      px(x0, air ? 31 : 32, lw, air ? 2 : 4, W);
+    }
   } else {
-    px(12, 10, 3, 1, "M");
+    px(lx, 27, lw, legBot - 26, P); px(lx + lw - 1, 27, 1, legBot - 26, PS);
+    px(rx, 27, lw, legBot - 26, P); px(rx + lw - 1, 27, 1, legBot - 26, PS);
+    if (ch.style === "suit" && !air)
+      for (const r of [28, 30, 32, 34]) { px(lx + 1, r, 1, 1, STRIPE); px(rx + 1, r, 1, 1, STRIPE); }
   }
-  /* chin shadow */
-  px(12, 11, 3, 1, "T");
+  if (air) {
+    px(lx - 1, 33, lw + 2, 2, K); px(rx - 1, 33, lw + 2, 2, K);
+  } else if (ch.shoes === "boot") {
+    px(lx, 31, lw, 5, K); px(rx, 31, lw, 5, K);
+    px(lx - 1, 36, lw + 2, 2, K); px(lx + 1, 38, 1, 1, K);
+    px(rx - 1, 36, lw + 2, 2, K); px(rx + 1, 38, 1, 1, K);
+  } else {
+    px(lx - 1, 36, lw + 2, 2, K); px(rx - 1, 36, lw + 2, 2, K);
+    if (ch.shoes === "heel") { px(lx + 1, 38, 1, 1, K); px(rx + 1, 38, 1, 1, K); }
+  }
 
-  /* long front hair falling over the chest (like the reference) */
-  px(8, 13, 1, 7, "H"); px(18, 13, 1, 7, "H");
-  px(9, 19, 1, 3, "H"); px(17, 19, 1, 3, "H");
-  px(8, 13, 1, 3, "G");
+  /* ---- hips ---- */
+  px(9, 24, 9, 3, P);
+  px(9, 24, 1, 3, PS); px(17, 24, 1, 3, PS);
+
+  /* ---- torso by style ---- */
+  if (ch.style === "suit") {
+    const N = ch.pants, D = ch.pantsSh;
+    px(7, 13, 12, 1, N); px(8, 14, 11, 10, N);
+    px(12, 13, 3, 1, W); px(11, 14, 5, 4, W); px(12, 18, 3, 3, W);
+    px(12, 19, 1, 2, V); px(13, 21, 1, 1, W);
+    px(11, 13, 1, 1, D); px(15, 13, 1, 1, D);
+    px(10, 14, 1, 4, D); px(16, 14, 1, 4, D);
+    px(11, 18, 1, 3, D); px(15, 18, 1, 3, D);
+    px(12, 21, 1, 1, D); px(14, 21, 1, 1, D);
+    for (const r of [15, 17, 19, 21, 23]) { px(9, r, 1, 1, STRIPE); px(17, r, 1, 1, STRIPE); }
+    px(5, 14, 2, 9, N); px(19, 14, 2, 9, N);
+    px(6, 14, 1, 9, D); px(19, 14, 1, 9, D);
+    px(5, 23, 2, 2, S); px(19, 23, 2, 2, S);
+  } else if (ch.style === "curly") {
+    /* teal blouse with a deep V, 3/4 sleeves */
+    px(7, 13, 12, 1, ch.top); px(8, 14, 11, 10, ch.top);
+    px(8, 14, 1, 10, ch.topSh); px(18, 14, 1, 10, ch.topSh);
+    px(12, 13, 3, 1, S); px(12, 14, 3, 1, S); px(13, 15, 1, 2, S);
+    px(13, 17, 1, 1, ch.topSh);
+    px(5, 14, 2, 6, ch.top); px(19, 14, 2, 6, ch.top);
+    px(5, 20, 2, 3, S); px(19, 20, 2, 3, S);
+    px(5, 23, 2, 2, S); px(19, 23, 2, 2, S);
+    px(5, 20, 2, 1, ch.topSh); px(19, 20, 2, 1, ch.topSh);
+  } else if (ch.style === "football") {
+    /* Real Madrid home kit: all-white jersey with navy trim and a gold crest */
+    const NV = "#27306b";
+    px(7, 13, 12, 1, W); px(8, 14, 11, 10, W);
+    px(8, 14, 1, 10, V); px(18, 14, 1, 10, V);
+    px(12, 13, 3, 1, NV);
+    px(10, 15, 1, 1, GOLD);
+    px(15, 15, 1, 1, NV);
+    px(5, 14, 2, 3, W); px(19, 14, 2, 3, W);
+    px(5, 16, 2, 1, NV); px(19, 16, 2, 1, NV);
+    px(5, 17, 2, 6, S); px(19, 17, 2, 6, S);
+    px(5, 23, 2, 2, S); px(19, 23, 2, 2, S);
+  } else { /* mask: pink tie-dye tee, short sleeves */
+    px(7, 13, 12, 1, ch.top); px(8, 14, 11, 10, ch.top);
+    for (const [tx, ty] of [[10, 15], [13, 16], [16, 15], [11, 18], [15, 19], [13, 21], [9, 20]])
+      px(tx, ty, 2, 1, ch.topPat);
+    px(11, 13, 4, 1, S);
+    px(5, 14, 2, 4, ch.top); px(19, 14, 2, 4, ch.top);
+    px(5, 18, 2, 5, S); px(19, 18, 2, 5, S);
+    px(5, 23, 2, 2, S); px(19, 23, 2, 2, S);
+  }
+
+  /* ---- neck ---- */
+  px(12, 12, 3, 1, S);
+
+  /* ---- head ---- */
+  if (ch.style === "curly") {
+    /* big fluffy curls */
+    px(10, 0, 7, 1, H); px(8, 1, 11, 1, H);
+    px(7, 2, 13, 2, H);
+    px(10, 4, 7, 8, S);
+    px(7, 3, 3, 11, H); px(17, 3, 3, 11, H);
+    px(6, 4, 1, 9, H); px(20, 4, 1, 9, H);
+    for (const [hx2, hy2] of [[5, 6], [21, 5], [5, 10], [21, 9], [6, 13], [20, 12]]) px(hx2, hy2, 1, 2, H);
+    for (const [hx3, hy3] of [[8, 1], [12, 0], [16, 1], [7, 4], [19, 3], [6, 8], [20, 7], [8, 12], [18, 11]]) px(hx3, hy3, 1, 1, G);
+    for (const [hx4, hy4] of [[10, 2], [14, 1], [18, 4], [7, 9], [19, 8]]) px(hx4, hy4, 1, 1, ch.hairDark);
+    px(8, 14, 2, 5, H); px(17, 14, 2, 5, H);
+    px(8, 14, 1, 2, G);
+  } else {
+    /* straight hair (black or blonde) */
+    px(11, 0, 5, 1, H); px(9, 1, 9, 1, H); px(8, 2, 10, 2, H);
+    px(10, 4, 7, 8, S);
+    px(8, 3, 2, 10, H); px(17, 3, 2, 10, H);
+    px(7, 5, 1, 9, H); px(19, 5, 1, 9, H);
+    px(14, 1, 2, 1, G); px(16, 2, 1, 2, G); px(17, 4, 1, 3, G);
+    if (ch.hairDark) { px(9, 2, 1, 2, ch.hairDark); px(8, 6, 1, 4, ch.hairDark); }
+    px(8, 13, 1, 7, H); px(18, 13, 1, 7, H);
+    px(9, 19, 1, 3, H); px(17, 19, 1, 3, H);
+    px(8, 13, 1, 3, G);
+  }
+
+  /* ---- face ---- */
+  px(11, 6, 2, 1, B); px(14, 6, 2, 1, B);
+  if (ch.sunglasses) {
+    px(10, 7, 3, 2, E); px(14, 7, 3, 2, E); px(13, 7, 1, 1, E);
+    px(11, 7, 1, 1, "#3a3a44"); px(15, 7, 1, 1, "#3a3a44");
+  } else {
+    px(11, 7, 2, 1, E); px(14, 7, 2, 1, E);
+    px(11, 8, 2, 1, T); px(14, 8, 2, 1, T);
+  }
+  px(17, 8, 1, 1, R);
+  px(13, 9, 1, 1, T);
+  px(10, 9, 1, 1, T); px(16, 9, 1, 1, T);
+  if (face === "inhale") {
+    px(12, 9, 3, 2, E);
+  } else if (face === "full") {
+    px(9, 7, 1, 3, S); px(17, 7, 1, 3, S);
+    px(13, 10, 1, 1, M);
+  } else {
+    px(12, 10, 3, 1, M);
+  }
+  px(12, 11, 3, 1, T);
+  if (ch.style === "mask") {
+    /* white surgical mask over nose and mouth */
+    px(10, 8, 7, 1, V);
+    px(10, 9, 7, 3, W);
+    px(11, 12, 5, 1, W);
+    px(9, 8, 1, 1, V); px(17, 8, 1, 1, V);
+  }
 
   return c;
 }
 
 function getSprite(legs, face) {
-  const k = legs + "_" + face;
-  return SPRITES[k] || (SPRITES[k] = buildSprite(legs, face));
+  const k = state.charIdx + "_" + legs + "_" + face;
+  return SPRITES[k] || (SPRITES[k] = buildSprite(state.charIdx, legs, face));
 }
 
 function drawPlayer() {
@@ -1580,7 +2070,25 @@ window.__draw = () => { if (game) draw(); };
 window.__keys = keys;
 window.__press = { jump: () => { jumpPressed = true; }, suck: () => { suckPressed = true; } };
 
+function renderCharSelect() {
+  const grid = $("#char-grid");
+  grid.innerHTML = "";
+  CHARACTERS.forEach((ch, i) => {
+    const b = document.createElement("button");
+    b.className = "char-opt" + (i === state.charIdx ? " selected" : "");
+    b.innerHTML = `<img src="${buildSprite(i, "idle", "normal").toDataURL()}" alt=""><div>${ch.emoji} ${ch.name}</div>`;
+    b.onclick = () => {
+      state.charIdx = i;
+      Object.keys(SPRITES).forEach(k => delete SPRITES[k]);
+      saveProgress();
+      renderCharSelect();
+    };
+    grid.appendChild(b);
+  });
+}
+
 loadProgress();
+renderCharSelect();
 $("#player-name").addEventListener("keydown", e => { if (e.key === "Enter") startGame(); });
 </script>
 </body>
