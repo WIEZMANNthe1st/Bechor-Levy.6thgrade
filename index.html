@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>שורדים את היסודי — בית הספר בכור לוי</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg1: #1a1c3a;
+    --bg2: #2d2f63;
+    --card: #ffffff;
+    --ink: #2b2b45;
+    --accent: #ff6b8b;
+    --accent2: #ffd93d;
+    --good: #4ecb71;
+    --blue: #5bc5f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Rubik', 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .screen { display: none; min-height: 100vh; padding: 24px 16px; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+  .panel {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 28px 24px;
+    max-width: 680px;
+    width: 100%;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    text-align: center;
+  }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; font-weight: 800; }
+  .sub { color: #666; margin-bottom: 18px; line-height: 1.6; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 1.15rem;
+    font-weight: 800;
+    border: none;
+    border-radius: 16px;
+    padding: 14px 34px;
+    cursor: pointer;
+    background: linear-gradient(180deg, var(--accent), #e84d72);
+    color: #fff;
+    box-shadow: 0 5px 0 #b53a58;
+    transition: transform .1s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #b53a58; }
+  .btn.alt { background: linear-gradient(180deg, var(--blue), #3aa6d6); box-shadow: 0 5px 0 #2b7da3; }
+  .btn.alt:active { box-shadow: 0 1px 0 #2b7da3; }
+
+  input[type=text] {
+    font-family: inherit;
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 12px;
+    border: 3px solid var(--blue);
+    border-radius: 14px;
+    width: 80%;
+    margin: 14px 0 20px;
+    outline: none;
+  }
+
+  .controls-hint {
+    background: #f0f6ff;
+    border-radius: 14px;
+    padding: 12px;
+    margin: 12px 0;
+    font-size: .95rem;
+    line-height: 1.9;
+    text-align: right;
+  }
+  kbd {
+    background: #2b2b45; color: #fff;
+    border-radius: 6px; padding: 2px 9px;
+    font-family: inherit; font-size: .85em;
+    box-shadow: 0 2px 0 #111;
+    margin: 0 2px;
+    display: inline-block;
+  }
+
+  /* ---- Map: school yard ---- */
+  #yard {
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 14px;
+  }
+  #yard svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  }
+  .station { cursor: pointer; }
+  .station.locked { cursor: default; filter: grayscale(1) opacity(.55); }
+  .station:hover:not(.locked) { filter: brightness(1.07); }
+  .station .glow { animation: stPulse 1.4s ease-in-out infinite; }
+  @keyframes stPulse { 0%,100% { opacity: .15; } 50% { opacity: .55; } }
+  .map-char, .play-arrow {
+    animation: charBob 1.2s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes charBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+  .map-title { color: #fff; text-align: center; }
+  .map-title h1 { color: #fff; }
+  .map-title p { color: #cfd2ff; }
+
+  /* ---- Game ---- */
+  #screen-game { padding: 8px; justify-content: center; }
+  #game-stage {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+  }
+  canvas {
+    width: 100%;
+    display: block;
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.45);
+    background: #aee6ff;
+    touch-action: none;
+  }
+  #quit-btn {
+    position: absolute; top: 10px; left: 10px;
+    font-family: inherit; font-weight: 800; font-size: .85rem;
+    border: none; border-radius: 12px; padding: 8px 14px;
+    background: rgba(20,22,50,.65); color: #fff; cursor: pointer;
+  }
+
+  /* touch controls */
+  .touch-btn {
+    position: absolute;
+    bottom: 14px;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.35);
+    border: 3px solid rgba(255,255,255,.7);
+    color: #2b2b45;
+    font-size: 1.5rem; font-weight: 800;
+    display: none;
+    align-items: center; justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  body.touch .touch-btn { display: flex; }
+  #tc-right { right: 14px; }
+  #tc-left  { right: 92px; }
+  #tc-jump  { left: 92px; background: rgba(255,182,193,.55); }
+  #tc-suck  { left: 14px; background: rgba(135,206,250,.55); }
+
+  /* feedback + overlay */
+  .overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(15,16,40,.75);
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.visible { display: flex; }
+  .overlay .panel { animation: pop .3s; max-height: 92vh; overflow-y: auto; }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .big-emoji { font-size: 3.6rem; margin-bottom: 8px; }
+  .story {
+    background: #fff8e1;
+    border-right: 6px solid var(--accent2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: right;
+    line-height: 1.7;
+    margin: 14px 0 18px;
+  }
+  .goal { font-weight: 800; color: #d35400; margin-bottom: 14px; }
+
+  /* diploma */
+  #diploma {
+    background: linear-gradient(160deg, #fffbe8, #fff);
+    border: 10px double #c9a227;
+    border-radius: 18px;
+    padding: 34px 24px;
+    max-width: 640px; width: 100%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  }
+  #diploma h1 { color: #b08a1e; }
+  #diploma .name { font-size: 2rem; font-weight: 800; margin: 10px 0; color: var(--ink); }
+  #diploma p { line-height: 1.8; }
+  #diploma .seal { font-size: 3rem; margin-top: 10px; }
+
+  .confetti {
+    position: fixed; top: -40px; z-index: 200; font-size: 1.6rem;
+    animation: confFall linear forwards;
+    pointer-events: none;
+  }
+  @keyframes confFall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 1.5rem; }
+    .map-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<section class="screen active" id="screen-start">
+  <div class="panel" style="margin-top:4vh">
+    <div class="big-emoji">🎒🏫</div>
+    <h1>שורדים את היסודי</h1>
+    <p class="sub">
+      הרפתקת פלטפורמה אמיתית של מחזור ו' בבית הספר <b>בכור לוי</b><br>
+      רוצו, קפצו, רחפו ושאפו אויבים — דרך שש שנים מטורפות,<br>
+      <b>מכיתה א' ועד קרב הבוס של החטיבה!</b>
+    </p>
+    <div class="controls-hint">
+      🎮 <b>איך משחקים:</b><br>
+      <kbd>→</kbd><kbd>←</kbd> לרוץ &nbsp;|&nbsp; <kbd>רווח</kbd> לקפוץ<br>
+      באוויר? לחצו <kbd>רווח</kbd> שוב ושוב כדי <b>לרחף עם בלון</b> 🎈<br>
+      <kbd>X</kbd> <b>לשאוף אויב</b> 🌀 ואז <kbd>X</kbd> שוב <b>לירות כוכב!</b> ⭐<br>
+      📱 בנייד — כפתורי מגע על המסך
+    </div>
+    <input type="text" id="player-name" maxlength="20" placeholder="איך קוראים לך?">
+    <br>
+    <button class="btn" onclick="startGame()">מתחילים את כיתה א'! 🚀</button>
+  </div>
+</section>
+
+<!-- MAP -->
+<section class="screen" id="screen-map">
+  <div class="map-title">
+    <h1>🏫 חצר בית הספר בכור לוי</h1>
+    <p id="map-greeting"></p>
+  </div>
+  <div id="yard"></div>
+</section>
+
+<!-- GAME -->
+<section class="screen" id="screen-game">
+  <div id="game-stage">
+    <canvas id="game-canvas" width="960" height="540"></canvas>
+    <button id="quit-btn" onclick="quitToMap()">🗺️ למפה</button>
+    <div class="touch-btn" id="tc-left">▸</div>
+    <div class="touch-btn" id="tc-right">◂</div>
+    <div class="touch-btn" id="tc-jump">🎈</div>
+    <div class="touch-btn" id="tc-suck">🌀</div>
+  </div>
+</section>
+
+<!-- DIPLOMA -->
+<section class="screen" id="screen-diploma">
+  <div id="diploma" style="margin-top:4vh">
+    <div class="seal">🎓</div>
+    <h1>תעודת הישרדות</h1>
+    <p>ניתנת בזאת ל־</p>
+    <div class="name" id="diploma-name"></div>
+    <p>
+      על שש שנות גבורה בבית הספר <b>בכור לוי</b>:<br>
+      שרד/ה מגיפה עולמית 🦠, אינספור זומים 💻,<br>
+      קפסולות, אזעקות ומתקפות טילים 🚨,<br>
+      3 מחנכות (טלי, מדו ואורית) 👩‍🏫,<br>
+      יצר/ה סרט ויראלי 🎬, זכה/תה במקום ראשון באולימפיאדת החלל 🛰️<br>
+      <b>והביס/ה את מפלצת החטיבה!</b> 👾
+    </p>
+    <h2 style="color:#b08a1e;margin-top:10px">חטיבת הביניים — כדאי לך להתכונן! 💪</h2>
+    <div style="margin-top:18px">
+      <span id="final-stars" style="font-size:1.6rem;color:#f5b301"></span>
+    </div>
+    <button class="btn" style="margin-top:20px" onclick="resetAll()">לשחק שוב 🔄</button>
+  </div>
+</section>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="panel" id="overlay-panel"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ================================================================
+   state & screens
+================================================================ */
+const state = { name: "", unlocked: 0, stars: [0,0,0,0,0,0], current: 0 };
+const $ = sel => document.querySelector(sel);
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+function saveProgress() {
+  try { localStorage.setItem("bq-save", JSON.stringify({ name: state.name, unlocked: state.unlocked, stars: state.stars })); } catch (e) {}
+}
+function loadProgress() {
+  try {
+    const s = JSON.parse(localStorage.getItem("bq-save"));
+    if (s && s.stars) { state.name = s.name; state.unlocked = s.unlocked; state.stars = s.stars; $("#player-name").value = s.name || ""; }
+  } catch (e) {}
+}
+function resetAll() {
+  try { localStorage.removeItem("bq-save"); } catch (e) {}
+  location.reload();
+}
+
+/* ================================================================
+   levels meta (story)
+================================================================ */
+const LEVELS = [
+  {
+    grade: "כיתה א'", emoji: "😷", name: "שלום כיתה א' (גרסת המגיפה)",
+    story: `הגעתם נרגשים מהגן וחיכיתם לחונכים מכיתה ו'... אבל היקום אמר: "קורונה!" את פניכם קיבלה המחנכת טלי — זיהיתם אותה רק לפי העיניים. למדתם בזום, חגגתם ימי הולדת בזום, ובין לבין למדתם קרוא וכתוב.`,
+    goal: "אספו 8 מסכות 😷 בדרך לבית הספר, היזהרו מהוירוסים 🦠 — ואפשר לשאוף אותם ולירות כוכבים!"
+  },
+  {
+    grade: "כיתה ב'", emoji: "💉", name: "מומחי הקורונה הקטנים",
+    story: `עדיין קורונה, עדיין טלי! הפכתם למומחים קטנים: תו ירוק, חיסונים, דלתא ואומיקרון. הנס הגדול — חזרתם לבית הספר! אמנם עם מסכה, אבל ביחד.`,
+    goal: "אספו 8 חיסונים 💉 — אבל עכשיו מסתובבים גם דלתא וגם אומיקרון... 🦠🧟"
+  },
+  {
+    grade: "כיתה ג'", emoji: "🚌", name: "שפיות זמנית",
+    story: `מחנכת חדשה — מדו! צעירה, כמעט כמוכם, והבינה אתכם בול. סוף־סוף שנה מלאה ונורמלית: טיול שנתי, חווה חקלאית, פורימון, ליל הסדר ומסיבת סיום שהפקתם לבד!`,
+    goal: "שנה נורמלית! אספו את 6 חוויות השנה: 🚌 🐄 🤡 🍷 🔥 🎉 — רק תיזהרו מהדבורים של החווה 🐝"
+  },
+  {
+    grade: "כיתה ד'", emoji: "🚨", name: "הנאצ'וס והאזעקות",
+    story: `התחלתם נורמלי, וחודש אחרי הגיע השביעי באוקטובר. הלו"ז החדש: אזעקות, ממ"דים ומקלטים — אבל גם יום הנאצ'וס הבינלאומי שמדו ארגנה, ודוכן מיצים לקהילה.`,
+    goal: "אספו 8 נאצ'וס 🌮 בזמן שטילים נופלים מהשמיים! 🚀 שימו לב לסימן האזהרה ⚠️ וזוזו מהר!"
+  },
+  {
+    grade: "כיתה ה'", emoji: "🎬", name: "כוכבי קולנוע וטילים מאיראן",
+    story: `קיבלתם את אורית כמחנכת. למדתם שחייה, יצרתם סרט בשם "לשלוף מהכובע" עם 200,000 צפיות ביוטיוב! ואז ביוני — מתקפה מאיראן ו־12 יום במקלטים.`,
+    goal: "אספו 8 סרטי קולנוע 🎬 להפקה הגדולה — בין טילים 🚀 לעב\"מים 🛸. אתם כבר מקצוענים!"
+  },
+  {
+    grade: "כיתה ו'", emoji: "👑", name: "הבוס הגדול: מפלצת החטיבה",
+    story: `סוף־סוף הכי גדולים בבית הספר! חנכתם את כיתות א', זכיתם במקום ראשון באולימפיאדת החלל... ועכשיו, בשער בית הספר, מחכה לכם המכשול האחרון: מפלצת החטיבה!`,
+    goal: "קרב בוס! 👾 שאפו את ספרי החטיבה המעופפים 📚 עם X וירו אותם בחזרה על המפלצת! 6 פגיעות והיא נופלת!"
+  }
+];
+
+/* ================================================================
+   start & map
+================================================================ */
+function startGame() {
+  const name = $("#player-name").value.trim();
+  state.name = name || "תלמיד/ה אמיץ/ה";
+  saveProgress();
+  $("#map-greeting").textContent = `קדימה ${state.name}! לחצו על הכיתה הפתוחה כדי לשחק`;
+  renderMap();
+  showScreen("#screen-map");
+}
+
+/* top-down campus map (viewBox 1000x720):
+   the 6 classroom buildings sit on a circular walkway around a central plaza */
+const MAP_POS = [[688, 474], [500, 533], [312, 474], [278, 359], [421, 265], [615, 276]];
+const MAP_DIR = [[.82, .57], [0, 1], [-.82, .57], [-.97, -.26], [-.34, -.94], [.5, -.87]];
+const CHAR_POS = [[732, 499], [500, 577], [268, 499], [227, 348], [403, 224], [642, 237]];
+const MAP_COLORS = ["#b9a78f", "#a7b0a0", "#c3b298", "#a59d96", "#afa3b9", "#bfa0a0"];
+const ROOF_COLORS = ["#cdbca6", "#bdc5b6", "#d4c6ae", "#b9b2ab", "#c2b7cd", "#d1b5b5"];
+
+function stationSvg(i, lv) {
+  const [x, y] = MAP_POS[i];
+  const [dx, dy] = MAP_DIR[i];
+  const done = state.stars[i] > 0;
+  const locked = i > state.unlocked;
+  const current = !locked && !done && i === state.unlocked;
+  const cls = "station" + (locked ? " locked" : "") + (current ? " current" : "");
+  return `
+  <g class="${cls}" data-station="${i}" transform="translate(${x},${y})">
+    ${current ? `<ellipse class="glow" cx="0" cy="0" rx="100" ry="76" fill="#ffd93d"/>` : ""}
+    <ellipse cx="${dx * 84}" cy="${dy * 58}" rx="24" ry="13" fill="#e3ddcf"/>
+    <rect x="-52" y="-34" width="116" height="84" rx="9" fill="rgba(0,0,0,.14)"/>
+    <rect x="-58" y="-42" width="116" height="84" rx="9" fill="${MAP_COLORS[i]}" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+    <rect x="-48" y="-32" width="96" height="64" rx="6" fill="${ROOF_COLORS[i]}"/>
+    <rect x="-40" y="-24" width="28" height="12" rx="2" fill="rgba(255,255,255,.45)"/>
+    <rect x="-40" y="-6" width="28" height="12" rx="2" fill="rgba(255,255,255,.3)"/>
+    <rect x="20" y="-24" width="13" height="13" rx="2" fill="rgba(0,0,0,.18)"/>
+    <rect x="20" y="-4" width="13" height="13" rx="2" fill="rgba(0,0,0,.18)"/>
+    <circle cx="2" cy="18" r="5" fill="rgba(0,0,0,.12)"/>
+    <rect x="${dx * 50 - 8}" y="${dy * 34 - 8}" width="16" height="16" rx="3" fill="#5d4a38"/>
+    ${locked ? `<text x="0" y="9" font-size="26" text-anchor="middle">🔒</text>` : ""}
+    <rect x="-52" y="-80" width="104" height="27" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
+    <text x="-7" y="-60" font-size="16" font-weight="800" text-anchor="middle" fill="#2b2b45" font-family="Rubik">${lv.grade}</text>
+    <text x="36" y="-60" font-size="15" text-anchor="middle">${locked ? "" : lv.emoji}</text>
+    ${done ? `<g><circle cx="52" cy="-50" r="13" fill="#4ecb71" stroke="#fff" stroke-width="2"/><text x="52" y="-44" font-size="15" text-anchor="middle" fill="#fff" font-weight="800">✓</text></g>` : ""}
+    <text x="0" y="62" font-size="15" text-anchor="middle">${"⭐".repeat(state.stars[i])}</text>
+    ${current ? `<g class="play-arrow"><rect x="-40" y="-114" width="80" height="26" rx="13" fill="#d35400"/><text x="0" y="-95" font-size="15" font-weight="800" text-anchor="middle" fill="#fff" font-family="Rubik">לשחק! ⬇</text></g>` : ""}
+  </g>`;
+}
+
+function charSvg(x, y) {
+  /* same pixel-art sprite as in-game, embedded as an image */
+  const url = getSprite("idle", "normal").toDataURL();
+  return `
+  <g class="map-char" transform="translate(${x},${y})">
+    <ellipse cx="0" cy="38" rx="15" ry="4.5" fill="rgba(0,0,0,.25)"/>
+    <image href="${url}" x="-26" y="-42" width="52" height="80" style="image-rendering:pixelated"/>
+  </g>`;
+}
+
+function renderMap() {
+  /* which station the hero stands at: next to play, or the last one if all done */
+  const allDone = state.stars[5] > 0;
+  const cur = allDone ? 5 : state.unlocked;
+  const [chx, chy] = CHAR_POS[cur];
+
+  const tree = (x, y, s) => `
+    <g transform="translate(${x},${y}) scale(${s || 1})">
+      <ellipse cx="3" cy="4" rx="16" ry="13" fill="rgba(0,0,0,.12)"/>
+      <circle cx="0" cy="0" r="14" fill="#6fa860"/>
+      <circle cx="-7" cy="-5" r="9" fill="#83bd70"/>
+      <circle cx="8" cy="-3" r="8" fill="#7ab266"/>
+    </g>`;
+  const trees = [
+    [255, 75, 1.1], [430, 48, .9], [590, 42, 1], [765, 85, 1.2], [905, 185, 1],
+    [935, 470, 1.1], [868, 555, .9], [62, 255, 1], [48, 480, .9], [262, 552, .8],
+    [560, 600, .9], [345, 105, .8], [660, 105, .9], [820, 250, .8]
+  ].map(t => tree(...t)).join("");
+
+  const bench = (x, y, rot) => `
+    <g transform="translate(${x},${y}) rotate(${rot || 0})">
+      <rect x="-13" y="-4" width="26" height="8" rx="2" fill="#8a6a48"/>
+      <rect x="-13" y="-4" width="26" height="3" fill="#a07e58"/>
+    </g>`;
+
+  const car = (x, y, c) => `
+    <g transform="translate(${x},${y})">
+      <rect x="-11" y="-7" width="22" height="14" rx="4" fill="${c}"/>
+      <rect x="-5" y="-5" width="9" height="10" rx="2" fill="rgba(255,255,255,.45)"/>
+    </g>`;
+  const cars = [[600, 672, "#c0574f"], [636, 672, "#4f7fc0"], [708, 672, "#d8b13c"],
+    [744, 672, "#5e5e6e"], [780, 672, "#7aa45c"], [672, 672, "#b8b8c0"]].map(c => car(...c)).join("");
+
+  const gate = (x, y, rot, label) => `
+    <g transform="translate(${x},${y}) rotate(${rot || 0})">
+      <rect x="-58" y="-13" width="116" height="26" rx="6" fill="#cf3a2b"/>
+      <text x="0" y="6" font-size="13" font-weight="800" text-anchor="middle" fill="#fff" font-family="Rubik">${label}</text>
+    </g>`;
+
+  $("#yard").innerHTML = `
+  <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1000" height="720" fill="#e9e7dd"/>
+    <!-- campus boundary -->
+    <polygon points="35,150 220,45 640,22 965,135 975,560 835,700 210,705 25,520"
+      fill="#f3f5ec" stroke="#2f2f2f" stroke-width="3"/>
+
+    <!-- football field -->
+    <g transform="translate(140,152) rotate(-12)">
+      <rect x="-108" y="-70" width="216" height="140" rx="8" fill="#4e9d44"/>
+      ${[0, 1, 2].map(i => `<rect x="${-108 + i * 72}" y="-70" width="36" height="140" fill="rgba(255,255,255,.07)"/>`).join("")}
+      <rect x="-94" y="-56" width="188" height="112" fill="none" stroke="#fff" stroke-width="2.5"/>
+      <line x1="0" y1="-56" x2="0" y2="56" stroke="#fff" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="17" fill="none" stroke="#fff" stroke-width="2.5"/>
+      <rect x="-94" y="-26" width="20" height="52" fill="none" stroke="#fff" stroke-width="2.5"/>
+      <rect x="74" y="-26" width="20" height="52" fill="none" stroke="#fff" stroke-width="2.5"/>
+    </g>
+
+    <!-- swimming pool -->
+    <g transform="translate(92,378)">
+      <rect x="-56" y="-37" width="112" height="74" rx="9" fill="#d9e6e2"/>
+      <rect x="-45" y="-26" width="90" height="52" rx="6" fill="#4fb8e8"/>
+      <line x1="-23" y1="-26" x2="-23" y2="26" stroke="#fff" stroke-width="2" stroke-dasharray="5 5"/>
+      <line x1="0" y1="-26" x2="0" y2="26" stroke="#fff" stroke-width="2" stroke-dasharray="5 5"/>
+      <line x1="23" y1="-26" x2="23" y2="26" stroke="#fff" stroke-width="2" stroke-dasharray="5 5"/>
+    </g>
+
+    <!-- basketball court -->
+    <g transform="translate(150,615)">
+      <rect x="-78" y="-46" width="156" height="92" rx="8" fill="#d8833f"/>
+      <rect x="-66" y="-34" width="132" height="68" fill="none" stroke="#fff" stroke-width="2"/>
+      <line x1="0" y1="-34" x2="0" y2="34" stroke="#fff" stroke-width="2"/>
+      <circle cx="0" cy="0" r="12" fill="none" stroke="#fff" stroke-width="2"/>
+      <rect x="-66" y="-13" width="20" height="26" fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="1.5"/>
+      <rect x="46" y="-13" width="20" height="26" fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="1.5"/>
+    </g>
+
+    <!-- parking -->
+    <g>
+      <rect x="555" y="638" width="270" height="68" rx="9" fill="#ced1d5"/>
+      ${[591, 627, 663, 699, 735, 771].map(x => `<line x1="${x}" y1="644" x2="${x}" y2="700" stroke="#fff" stroke-width="2"/>`).join("")}
+      ${cars}
+    </g>
+
+    <!-- playground -->
+    <g transform="translate(908,308)">
+      <circle r="36" fill="#efe3c8" stroke="#ddcfa9" stroke-width="3"/>
+      <text y="11" font-size="34" text-anchor="middle">🛝</text>
+    </g>
+
+    <!-- circular walkway -->
+    <ellipse cx="500" cy="395" rx="320" ry="210" fill="none" stroke="#c9c2b0" stroke-width="40"/>
+    <ellipse cx="500" cy="395" rx="320" ry="210" fill="none" stroke="#e4decd" stroke-width="30"/>
+    <ellipse cx="500" cy="395" rx="320" ry="210" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 16" opacity=".8"/>
+    <!-- spur: ring to main building -->
+    <path d="M 500 187 L 500 130" stroke="#c9c2b0" stroke-width="30" stroke-linecap="round"/>
+    <path d="M 500 187 L 500 130" stroke="#e4decd" stroke-width="22" stroke-linecap="round"/>
+    <!-- spur: ring to entrance gate -->
+    <path d="M 500 603 Q 472 650 438 684" stroke="#c9c2b0" stroke-width="30" stroke-linecap="round" fill="none"/>
+    <path d="M 500 603 Q 472 650 438 684" stroke="#e4decd" stroke-width="22" stroke-linecap="round" fill="none"/>
+
+    <!-- central plaza + fountain -->
+    <circle cx="500" cy="395" r="80" fill="#e7e2d4" stroke="#d4cdba" stroke-width="4"/>
+    <circle cx="500" cy="395" r="42" fill="#bfe3f0" stroke="#9ec9d8" stroke-width="3"/>
+    <circle cx="500" cy="395" r="18" fill="#8fd0ea"/>
+    <circle cx="500" cy="395" r="6" fill="#fff" opacity=".8"/>
+    ${bench(500, 318, 0)}${bench(500, 472, 0)}${bench(424, 395, 90)}${bench(576, 395, 90)}
+
+    <!-- main school building (top-down) -->
+    <g transform="translate(500,86)">
+      <rect x="-109" y="-32" width="230" height="82" rx="10" fill="rgba(0,0,0,.14)"/>
+      <rect x="-115" y="-40" width="230" height="82" rx="10" fill="#b3a08c" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+      <rect x="-103" y="-29" width="206" height="60" rx="6" fill="#c8b6a0"/>
+      ${[-88, -52, -16, 20, 56].map(x => `<rect x="${x}" y="-21" width="24" height="11" rx="2" fill="rgba(255,255,255,.45)"/>`).join("")}
+      <circle cx="78" cy="14" r="9" fill="rgba(0,0,0,.15)"/>
+      <rect x="-9" y="34" width="18" height="14" rx="3" fill="#5d4a38"/>
+      <rect x="-100" y="-8" width="200" height="30" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
+      <text x="0" y="14" font-size="19" font-weight="800" text-anchor="middle" fill="#2b2b45" font-family="Rubik">🏫 בית הספר בכור לוי</text>
+    </g>
+
+    <!-- gates -->
+    ${gate(438, 700, -35, "כניסת תלמידים")}
+    <text x="395" y="660" font-size="22" text-anchor="middle">🎒</text>
+    ${gate(248, 38, -14, "יציאת חירום")}
+
+    <!-- compass -->
+    <g transform="translate(915,645)">
+      <circle r="30" fill="#fff" stroke="#9a958a" stroke-width="3"/>
+      <circle r="22" fill="none" stroke="#d8d3c8" stroke-width="1.5"/>
+      <polygon points="0,-19 5,0 0,19 -5,0" fill="#c0392b"/>
+      <polygon points="-19,0 0,-5 19,0 0,5" fill="#6e6a60"/>
+      <circle r="3.5" fill="#2f2f2f"/>
+      <text y="-37" font-size="13" font-weight="800" text-anchor="middle" fill="#6e6a60" font-family="Rubik">צפון</text>
+    </g>
+
+    ${trees}
+    ${LEVELS.map((lv, i) => stationSvg(i, lv)).join("")}
+    ${charSvg(chx, chy)}
+  </svg>`;
+
+  $("#yard").querySelectorAll("[data-station]").forEach(g => {
+    const i = +g.dataset.station;
+    if (i <= state.unlocked) g.addEventListener("click", () => openLevel(i));
+  });
+}
+
+function openLevel(i) {
+  state.current = i;
+  const lv = LEVELS[i];
+  showOverlay(`
+    <div class="big-emoji">${lv.emoji}</div>
+    <h2>${lv.grade}: ${lv.name}</h2>
+    <div class="story">${lv.story}</div>
+    <div class="goal">🎯 ${lv.goal}</div>
+    <button class="btn" onclick="launchLevel()">יאללה, מתחילים!</button>
+  `);
+}
+
+function launchLevel() {
+  hideOverlay();
+  showScreen("#screen-game");
+  startEngine(state.current);
+}
+
+function quitToMap() {
+  stopEngine();
+  renderMap();
+  showScreen("#screen-map");
+}
+
+/* ================================================================
+   overlay & results
+================================================================ */
+function showOverlay(html) {
+  $("#overlay-panel").innerHTML = html;
+  $("#overlay").classList.add("visible");
+}
+function hideOverlay() { $("#overlay").classList.remove("visible"); }
+
+function levelWon(stars, msg) {
+  stopEngine();
+  playSound("win");
+  const i = state.current;
+  state.stars[i] = Math.max(state.stars[i], stars);
+  if (i === state.unlocked && i < 5) state.unlocked = i + 1;
+  saveProgress();
+  if (i === 5) { showDiploma(); return; }
+  showOverlay(`
+    <div class="big-emoji">🎉</div>
+    <h2>עברתם את ${LEVELS[i].grade}!</h2>
+    <p class="sub" style="margin-top:8px">${msg}</p>
+    <div style="font-size:2rem;color:#f5b301;margin:8px 0">${"⭐".repeat(stars)}</div>
+    <button class="btn" onclick="hideOverlay(); openLevel(${i + 1})">ממשיכים ל${LEVELS[i + 1].grade} ⬅</button>
+    <div style="margin-top:10px"><button class="btn alt" onclick="hideOverlay(); quitToMap()">למפה 🗺️</button></div>
+  `);
+}
+
+function levelLost(msg) {
+  stopEngine();
+  playSound("lose");
+  showOverlay(`
+    <div class="big-emoji">😵</div>
+    <h2>אופס... לא הפעם</h2>
+    <p class="sub" style="margin-top:8px">${msg}</p>
+    <button class="btn" onclick="hideOverlay(); launchLevel()">מנסים שוב 💪</button>
+    <div style="margin-top:10px"><button class="btn alt" onclick="hideOverlay(); quitToMap()">למפה 🗺️</button></div>
+  `);
+}
+
+function showDiploma() {
+  $("#diploma-name").textContent = state.name;
+  const total = state.stars.reduce((a, b) => a + b, 0);
+  $("#final-stars").textContent = `⭐ ${total} / 18 כוכבים`;
+  showScreen("#screen-diploma");
+  confetti();
+}
+
+function confetti() {
+  const emojis = ["🎉", "🎓", "⭐", "🎊", "💛", "🏆"];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      c.style.right = Math.random() * 100 + "vw";
+      c.style.animationDuration = (2.5 + Math.random() * 2.5) + "s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5500);
+    }, i * 80);
+  }
+}
+
+/* ================================================================
+   sounds
+================================================================ */
+let audioCtx = null;
+function playSound(type) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = {
+      good:   [[660,.07],[880,.09]],
+      bad:    [[200,.2]],
+      jump:   [[440,.06],[600,.06]],
+      puff:   [[520,.05]],
+      inhale: [[300,.12],[380,.12]],
+      spit:   [[900,.06],[1200,.08]],
+      hit:    [[150,.15]],
+      boom:   [[90,.3]],
+      win:    [[523,.1],[659,.1],[784,.12],[1046,.2]],
+      lose:   [[330,.15],[262,.25]]
+    }[type] || [];
+    let t = audioCtx.currentTime;
+    notes.forEach(([f, d]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type === "boom" || type === "hit" ? "sawtooth" : "triangle";
+      o.frequency.value = f;
+      g.gain.setValueAtTime(.15, t);
+      g.gain.exponentialRampToValueAtTime(.001, t + d);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t); o.stop(t + d);
+      t += d * .9;
+    });
+  } catch (e) {}
+}
+
+/* ================================================================
+   LEVEL WORLD DATA
+   ground(gx): segments [x0,x1]; plats: [x,y,w]; items: [x,y];
+   enemies: [x, y, type] type: walk | fly
+================================================================ */
+function groundsToPlats(grounds) {
+  return grounds.map(([a, b]) => ({ x: a, y: 470, w: b - a, h: 70, ground: true }));
+}
+
+const WORLDS = [
+  { // 1 — corona
+    width: 2900,
+    sky: ["#ffd9ec", "#c8ecff"], hills: "#a8d8a8", ground: "#e8b06c", groundTop: "#7ec850",
+    deco: ["🌸", "🌷", "🌳"],
+    item: "😷", need: 8,
+    enemy: { walk: "🦠", fly: "🦠" },
+    grounds: [[0, 620], [700, 1450], [1530, 2250], [2330, 2900]],
+    plats: [[300, 360, 130], [540, 290, 110], [850, 340, 140], [1150, 260, 130], [1650, 350, 150], [1950, 270, 130], [2400, 340, 150]],
+    items: [[330, 320], [590, 250], [900, 300], [1200, 220], [760, 430], [1400, 430], [1700, 310], [2010, 230], [2200, 430], [2460, 300]],
+    enemies: [[420, 0, "walk"], [950, 0, "walk"], [1750, 0, "walk"], [2450, 0, "walk"], [1300, 280, "fly"], [2100, 300, "fly"]]
+  },
+  { // 2 — vaccines
+    width: 3100,
+    sky: ["#d3f1ff", "#fff3c9"], hills: "#8fd3b6", ground: "#d9a05b", groundTop: "#69bd45",
+    deco: ["🌼", "🍄", "🌳"],
+    item: "💉", need: 8,
+    enemy: { walk: "🧟", fly: "🦠" },
+    grounds: [[0, 540], [640, 1280], [1380, 1980], [2090, 2620], [2700, 3100]],
+    plats: [[280, 350, 120], [500, 280, 110], [800, 330, 130], [1100, 250, 120], [1500, 340, 140], [1800, 260, 120], [2200, 330, 140], [2480, 250, 120]],
+    items: [[310, 310], [550, 240], [850, 290], [1150, 210], [1550, 300], [1850, 220], [2250, 290], [2530, 210], [950, 430], [2350, 430]],
+    enemies: [[400, 0, "walk"], [900, 0, "walk"], [1600, 0, "walk"], [2300, 0, "walk"], [2800, 0, "walk"], [1200, 280, "fly"], [1900, 290, "fly"], [2550, 270, "fly"]]
+  },
+  { // 3 — normal year (easier, collect 6 unique)
+    width: 3000,
+    sky: ["#bdedff", "#e8ffe1"], hills: "#7fcf7f", ground: "#caa15e", groundTop: "#55c14e",
+    deco: ["🌻", "🌳", "🦋"],
+    item: ["🚌", "🐄", "🤡", "🍷", "🔥", "🎉"], need: 6,
+    enemy: { walk: "🐝", fly: "🐝" },
+    grounds: [[0, 700], [780, 1600], [1680, 2400], [2480, 3000]],
+    plats: [[350, 350, 140], [650, 280, 120], [1000, 340, 150], [1350, 260, 130], [1850, 340, 150], [2150, 260, 130], [2550, 340, 150]],
+    items: [[400, 310], [1050, 300], [1400, 220], [1900, 300], [2200, 220], [2600, 300]],
+    enemies: [[1100, 0, "walk"], [2000, 0, "walk"], [1500, 280, "fly"], [2650, 290, "fly"]]
+  },
+  { // 4 — rockets + nachos
+    width: 3100,
+    sky: ["#ffd2a8", "#ffeede"], hills: "#c98c5a", ground: "#b07748", groundTop: "#8f9d4e",
+    deco: ["🏠", "🌵", "🪨"],
+    item: "🌮", need: 8,
+    enemy: { walk: "🤖", fly: "🛩️" },
+    rockets: 3.2,
+    grounds: [[0, 560], [660, 1300], [1400, 2000], [2110, 2640], [2720, 3100]],
+    plats: [[300, 350, 120], [520, 280, 110], [820, 330, 130], [1120, 250, 120], [1520, 340, 140], [1820, 260, 120], [2220, 330, 140], [2500, 250, 120]],
+    items: [[330, 310], [570, 240], [870, 290], [1170, 210], [1570, 300], [1870, 220], [2270, 290], [2550, 210], [980, 430], [2380, 430]],
+    enemies: [[450, 0, "walk"], [1000, 0, "walk"], [1700, 0, "walk"], [2400, 0, "walk"], [1250, 280, "fly"], [2050, 290, "fly"]]
+  },
+  { // 5 — movie + rockets harder
+    width: 3300,
+    sky: ["#2c2c54", "#706fd3"], hills: "#474787", ground: "#5f5f9e", groundTop: "#8e8ed1",
+    deco: ["🎥", "🎬", "🌟"], night: true,
+    item: "🎬", need: 8,
+    enemy: { walk: "📰", fly: "🛸" },
+    rockets: 2.6,
+    grounds: [[0, 520], [620, 1180], [1290, 1840], [1960, 2480], [2590, 3300]],
+    plats: [[280, 350, 120], [500, 270, 110], [780, 330, 130], [1080, 240, 120], [1450, 340, 130], [1750, 250, 120], [2150, 330, 130], [2430, 240, 120], [2800, 320, 140]],
+    items: [[310, 310], [550, 230], [830, 290], [1130, 200], [1500, 300], [1800, 210], [2200, 290], [2480, 200], [2860, 280], [3050, 430]],
+    enemies: [[400, 0, "walk"], [900, 0, "walk"], [1550, 0, "walk"], [2250, 0, "walk"], [2900, 0, "walk"], [1150, 270, "fly"], [1900, 280, "fly"], [2600, 260, "fly"]]
+  },
+  { // 6 — boss arena
+    width: 960,
+    sky: ["#3d1e6d", "#8758c9"], hills: "#5b3a96", ground: "#4a3270", groundTop: "#7a5cad",
+    deco: ["✨", "⭐"], night: true,
+    item: "⭐", need: 0,
+    enemy: { walk: "📚", fly: "📚" },
+    boss: true,
+    grounds: [[0, 960]],
+    plats: [[120, 340, 140], [700, 340, 140], [410, 250, 140]],
+    items: [],
+    enemies: []
+  }
+];
+
+/* ================================================================
+   ENGINE
+================================================================ */
+const cv = $("#game-canvas");
+const ctx = cv.getContext("2d");
+const W = 960, H = 540;
+const GRAV = 2300, RUN = 280, JUMP_V = -760, FLAP_V = -330;
+
+let game = null;   // active game state
+let rafId = null;
+let lastT = 0;
+
+const keys = { left: false, right: false, jump: false, suck: false };
+let jumpPressed = false, suckPressed = false;
+
+window.addEventListener("keydown", e => {
+  if (!game) return;
+  if (["ArrowLeft", "KeyA"].includes(e.code)) keys.left = true;
+  if (["ArrowRight", "KeyD"].includes(e.code)) keys.right = true;
+  if (["ArrowUp", "Space", "KeyZ", "KeyW"].includes(e.code)) { if (!keys.jump) jumpPressed = true; keys.jump = true; e.preventDefault(); }
+  if (e.code === "KeyX") { if (!keys.suck) suckPressed = true; keys.suck = true; }
+});
+window.addEventListener("keyup", e => {
+  if (["ArrowLeft", "KeyA"].includes(e.code)) keys.left = false;
+  if (["ArrowRight", "KeyD"].includes(e.code)) keys.right = false;
+  if (["ArrowUp", "Space", "KeyZ", "KeyW"].includes(e.code)) keys.jump = false;
+  if (e.code === "KeyX") keys.suck = false;
+});
+
+/* touch buttons */
+if ("ontouchstart" in window) document.body.classList.add("touch");
+function bindTouch(id, key) {
+  const el = $(id);
+  el.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    if (key === "jump" && !keys.jump) jumpPressed = true;
+    if (key === "suck" && !keys.suck) suckPressed = true;
+    keys[key] = true;
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev =>
+    el.addEventListener(ev, () => { keys[key] = false; }));
+}
+bindTouch("#tc-left", "left");
+bindTouch("#tc-right", "right");
+bindTouch("#tc-jump", "jump");
+bindTouch("#tc-suck", "suck");
+
+function startEngine(levelIdx) {
+  const world = WORLDS[levelIdx];
+  const plats = groundsToPlats(world.grounds).concat(
+    world.plats.map(([x, y, w]) => ({ x, y, w, h: 18 }))
+  );
+  const itemList = world.items.map(([x, y], i) => ({
+    x, y, taken: false,
+    emoji: Array.isArray(world.item) ? world.item[i % world.item.length] : world.item
+  }));
+  const enemies = world.enemies.map(([x, y, type]) => makeEnemy(world, x, y, type));
+
+  const groundDeco = world.grounds.flatMap(([a, b], gi) => {
+    const out = [];
+    for (let x = a + 90; x < b - 60; x += 240)
+      out.push({ x, e: world.deco[(gi + Math.round(x / 240)) % world.deco.length] });
+    return out;
+  });
+
+  game = {
+    world, plats, items: itemList, enemies, groundDeco,
+    player: {
+      x: 60, y: 380, vx: 0, vy: 0, r: 21,
+      facing: 1, onGround: false, puffed: false, full: false,
+      hp: 3, inv: 0, inhaling: false, anim: 0
+    },
+    stars: [],          // spit projectiles
+    rockets: [],        // falling rockets
+    warns: [],          // rocket warnings
+    parts: [],          // particles
+    camX: 0,
+    collected: 0,
+    time: 0,
+    rocketTimer: world.rockets ? 2.5 : Infinity,
+    boss: world.boss ? {
+      x: 700, y: 470, w: 110, h: 110, vx: 0, vy: 0, hp: 6, maxHp: 6,
+      mode: "walk", t: 0, spawnT: 2, hurtT: 0, dir: -1
+    } : null,
+    over: false
+  };
+  lastT = performance.now();
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
+}
+
+function stopEngine() {
+  cancelAnimationFrame(rafId);
+  game = null;
+  Object.keys(keys).forEach(k => keys[k] = false);
+}
+
+function makeEnemy(world, x, y, type) {
+  return {
+    x, y: type === "walk" ? 440 : y, baseY: y,
+    vx: type === "walk" ? 60 : 80,
+    type, emoji: world.enemy[type],
+    r: 17, dead: false, t: Math.random() * 6.28,
+    homeX: x, range: 130, sucked: 0
+  };
+}
+
+/* ---------------- update ---------------- */
+function loop(now) {
+  if (!game) return;
+  const dt = Math.min((now - lastT) / 1000, 0.033);
+  lastT = now;
+  update(dt);
+  draw();
+  if (game && !game.over) rafId = requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  const g = game, p = g.player, world = g.world;
+  g.time += dt;
+  p.anim += dt;
+  if (p.inv > 0) p.inv -= dt;
+
+  /* --- input / movement --- */
+  if (keys.left)  { p.vx = -RUN; p.facing = -1; }
+  else if (keys.right) { p.vx = RUN; p.facing = 1; }
+  else p.vx *= 0.8;
+
+  if (jumpPressed) {
+    if (p.onGround) { p.vy = JUMP_V; p.onGround = false; playSound("jump"); }
+    else { p.puffed = true; p.vy = FLAP_V; playSound("puff"); spawnPuff(p.x, p.y + p.r); }
+    jumpPressed = false;
+  }
+  jumpPressed = false;
+
+  /* gravity (floaty when puffed) */
+  p.vy += GRAV * dt * (p.puffed ? 0.35 : 1);
+  if (p.puffed && p.vy > 90) p.vy = 90;
+  if (p.vy > 950) p.vy = 950;
+
+  const prevBottom = p.y + p.r;
+  p.x += p.vx * dt;
+  p.y += p.vy * dt;
+  p.x = Math.max(p.r, Math.min(world.width - p.r, p.x));
+
+  /* platform landing (one-way) */
+  p.onGround = false;
+  for (const pl of g.plats) {
+    if (p.vy >= 0 && prevBottom <= pl.y + 6 && p.y + p.r >= pl.y &&
+        p.x > pl.x - p.r + 6 && p.x < pl.x + pl.w + p.r - 6) {
+      p.y = pl.y - p.r;
+      p.vy = 0;
+      p.onGround = true;
+      if (p.puffed) { p.puffed = false; spawnPuff(p.x, p.y + p.r); }
+    }
+  }
+
+  /* fell into a pit */
+  if (p.y > H + 120) { gameOver("נפלתם לבור! אפילו בקורונה לא נפלנו ככה 😅"); return; }
+
+  /* --- inhale / spit --- */
+  p.inhaling = keys.suck && !p.full;
+  if (suckPressed && p.full) {
+    p.full = false;
+    g.stars.push({ x: p.x + p.facing * 26, y: p.y - 4, vx: p.facing * 640, life: 1.4 });
+    playSound("spit");
+  }
+  suckPressed = false;
+
+  if (p.inhaling && Math.floor(p.anim * 10) % 3 === 0) playSound("inhale");
+
+  /* --- enemies --- */
+  for (const e of g.enemies) {
+    if (e.dead) continue;
+    e.t += dt;
+    if (p.inhaling) {
+      const dx = e.x - p.x, dy = e.y - p.y;
+      const inFront = Math.sign(dx) === p.facing || Math.abs(dx) < 20;
+      if (inFront && Math.abs(dx) < 170 && Math.abs(dy) < 80) {
+        e.x -= Math.sign(dx) * 260 * dt;
+        e.y -= dy * 2.5 * dt;
+        e.sucked += dt;
+        if (Math.abs(e.x - p.x) < 26 && Math.abs(e.y - p.y) < 30) {
+          e.dead = true;
+          p.full = true;
+          playSound("good");
+          spawnBurst(e.x, e.y, "💨", 4);
+          continue;
+        }
+      }
+    } else if (e.type === "walk") {
+      e.x += e.vx * dt;
+      if (e.x > e.homeX + e.range || e.x < e.homeX - e.range) e.vx *= -1;
+    } else {
+      e.x += Math.cos(e.t * 1.4) * 60 * dt;
+      e.y = e.baseY + Math.sin(e.t * 2.2) * 38;
+    }
+    /* hit player */
+    if (p.inv <= 0 && Math.abs(e.x - p.x) < e.r + p.r - 8 && Math.abs(e.y - p.y) < e.r + p.r - 8) {
+      hurtPlayer();
+    }
+  }
+
+  /* --- spit stars --- */
+  for (const s of g.stars) {
+    s.x += s.vx * dt;
+    s.life -= dt;
+    for (const e of g.enemies) {
+      if (!e.dead && Math.abs(e.x - s.x) < 28 && Math.abs(e.y - s.y) < 28) {
+        e.dead = true; s.life = 0;
+        playSound("good");
+        spawnBurst(e.x, e.y, "✨", 6);
+      }
+    }
+    if (g.boss && g.boss.hp > 0 && s.life > 0 &&
+        s.x > g.boss.x - g.boss.w / 2 && s.x < g.boss.x + g.boss.w / 2 &&
+        s.y > g.boss.y - g.boss.h && s.y < g.boss.y) {
+      g.boss.hp--; g.boss.hurtT = .4; s.life = 0;
+      playSound("hit");
+      spawnBurst(s.x, s.y, "💥", 8);
+      if (g.boss.hp <= 0) { bossDefeated(); return; }
+    }
+  }
+  g.stars = g.stars.filter(s => s.life > 0);
+
+  /* --- rockets --- */
+  if (world.rockets) {
+    g.rocketTimer -= dt;
+    if (g.rocketTimer <= 0) {
+      g.rocketTimer = world.rockets * (0.7 + Math.random() * 0.6);
+      const rx = Math.max(100, Math.min(world.width - 100, p.x + (Math.random() * 700 - 350)));
+      g.warns.push({ x: rx, t: 1.0 });
+    }
+  }
+  for (const w of g.warns) {
+    w.t -= dt;
+    if (w.t <= 0) { g.rockets.push({ x: w.x, y: -40, vy: 560 }); playSound("bad"); }
+  }
+  g.warns = g.warns.filter(w => w.t > 0);
+  for (const r of g.rockets) {
+    r.y += r.vy * dt;
+    if (r.y >= 455) {
+      r.boom = true;
+      playSound("boom");
+      spawnBurst(r.x, 455, "💥", 10);
+      if (p.inv <= 0 && Math.abs(p.x - r.x) < 85 && p.y > 330) hurtPlayer();
+    }
+  }
+  g.rockets = g.rockets.filter(r => !r.boom);
+
+  /* --- items --- */
+  for (const it of g.items) {
+    if (!it.taken && Math.abs(it.x - p.x) < 34 && Math.abs(it.y - p.y) < 38) {
+      it.taken = true;
+      g.collected++;
+      playSound("good");
+      spawnBurst(it.x, it.y, "✨", 5);
+    }
+  }
+
+  /* --- boss AI --- */
+  if (g.boss) updateBoss(dt);
+
+  /* --- particles --- */
+  for (const pt of g.parts) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vy += 300 * dt; pt.life -= dt; }
+  g.parts = g.parts.filter(pt => pt.life > 0);
+
+  /* --- goal door --- */
+  if (!world.boss) {
+    const doorX = world.width - 70;
+    if (Math.abs(p.x - doorX) < 46 && p.y > 360) {
+      if (g.collected >= world.need) {
+        const stars = p.hp === 3 ? 3 : p.hp === 2 ? 2 : 1;
+        const i = state.current;
+        const msgs = [
+          "אספתם מספיק מסכות ולמדתם קרוא וכתוב בזום! סיימתם את השנה בטיול עששיות 🏮",
+          "מומחי קורונה אמיתיים! טלי גיבשה את הכיתה ולמדתם מהי חברות אמיתית 💚",
+          "איזו שנה! בלי זומים, עם טיול שנתי ומסיבת סיום שהפקתם לגמרי לבד. מדו גאה בכם! 🌟",
+          "שרדתם את האזעקות עם נאצ'וס ביד! ובמסיבת הסיום — חדר בריחה להורים 🔐",
+          "ההפקה הושלמה! 200,000 צפיות ביוטיוב — כוכבי קולנוע אמיתיים 🌟"
+        ];
+        levelWon(stars, msgs[i] || "");
+        return;
+      }
+    }
+  }
+
+  /* camera */
+  g.camX = Math.max(0, Math.min(world.width - W, p.x - W / 2));
+}
+
+function updateBoss(dt) {
+  const b = game.boss, p = game.player, g = game;
+  b.t += dt;
+  if (b.hurtT > 0) b.hurtT -= dt;
+
+  if (b.mode === "walk") {
+    b.dir = p.x < b.x ? -1 : 1;
+    b.x += b.dir * 70 * dt;
+    if (b.t > 2.6) { b.mode = "jump"; b.vy = -680; b.t = 0; }
+  } else if (b.mode === "jump") {
+    b.vy += GRAV * 0.6 * dt;
+    b.y += b.vy * dt;
+    b.x += b.dir * 180 * dt;
+    if (b.y >= 470) { b.y = 470; b.mode = "walk"; b.t = 0; playSound("boom"); spawnBurst(b.x, 470, "💨", 6); }
+  }
+  b.x = Math.max(80, Math.min(880, b.x));
+
+  /* spawn flying books */
+  b.spawnT -= dt;
+  const alive = g.enemies.filter(e => !e.dead).length;
+  if (b.spawnT <= 0 && alive < 2) {
+    b.spawnT = 3.2;
+    const e = makeEnemy(g.world, b.x, b.y - b.h - 10, "fly");
+    e.baseY = 240 + Math.random() * 120;
+    e.homeX = e.x;
+    e.range = 400;
+    g.enemies.push(e);
+    spawnBurst(b.x, b.y - b.h, "📚", 3);
+  }
+
+  /* boss touch hurts */
+  if (p.inv <= 0 &&
+      Math.abs(p.x - b.x) < b.w / 2 + p.r - 10 &&
+      p.y > b.y - b.h - p.r + 10 && p.y < b.y + p.r) {
+    hurtPlayer();
+  }
+}
+
+function bossDefeated() {
+  spawnBurst(game.boss.x, game.boss.y - 60, "💥", 16);
+  spawnBurst(game.boss.x, game.boss.y - 60, "⭐", 12);
+  const stars = game.player.hp === 3 ? 3 : game.player.hp === 2 ? 2 : 1;
+  game.over = true;
+  setTimeout(() => levelWon(stars, ""), 600);
+}
+
+function hurtPlayer() {
+  const p = game.player;
+  p.hp--;
+  p.inv = 1.6;
+  p.vy = -380;
+  p.puffed = false;
+  playSound("hit");
+  spawnBurst(p.x, p.y, "💢", 5);
+  if (p.hp <= 0) gameOver("נגמרו הלבבות... אבל מי ששרד שש שנים כאלה לא מוותר!");
+}
+
+function gameOver(msg) {
+  game.over = true;
+  levelLost(msg);
+}
+
+function spawnPuff(x, y) {
+  for (let i = 0; i < 3; i++)
+    game.parts.push({ x: x + (Math.random() * 20 - 10), y, vx: Math.random() * 60 - 30, vy: -40, life: .4, emoji: "💨", size: 14 });
+}
+function spawnBurst(x, y, emoji, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, sp = 80 + Math.random() * 160;
+    game.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: .5 + Math.random() * .3, emoji, size: 16 + Math.random() * 8 });
+  }
+}
+
+/* ---------------- draw ---------------- */
+function draw() {
+  const g = game, world = g.world, p = g.player;
+
+  /* sky */
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, world.sky[0]);
+  grad.addColorStop(1, world.sky[1]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  /* sky details: sun + clouds by day, moon + twinkling stars by night */
+  ctx.textAlign = "center";
+  if (world.night) {
+    for (let i = 0; i < 26; i++) {
+      const sx = (i * 173 + 40) % W, sy = (i * 97 + 18) % 200;
+      ctx.globalAlpha = .3 + (Math.sin(g.time * 2 + i * 1.7) * .5 + .5) * .6;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#f6f1d5";
+    ctx.beginPath(); ctx.arc(W - 95, 70, 26, 0, 6.29); ctx.fill();
+    ctx.fillStyle = world.sky[0];
+    ctx.beginPath(); ctx.arc(W - 106, 61, 22, 0, 6.29); ctx.fill();
+  } else {
+    ctx.fillStyle = "rgba(255,228,120,.3)";
+    ctx.beginPath(); ctx.arc(90, 70, 54, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#ffd93d";
+    ctx.beginPath(); ctx.arc(90, 70, 32, 0, 6.29); ctx.fill();
+  }
+  /* drifting clouds */
+  ctx.fillStyle = world.night ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)";
+  const cOff = -(g.camX * .25) + g.time * 6;
+  for (let i = 0; i < 4; i++) {
+    const cx2 = ((i * 310 + cOff) % (W + 240) + W + 240) % (W + 240) - 120;
+    const cy2 = 46 + (i * 47) % 92;
+    ctx.beginPath();
+    ctx.ellipse(cx2, cy2, 46, 14, 0, 0, 6.29);
+    ctx.ellipse(cx2 + 28, cy2 - 10, 30, 12, 0, 0, 6.29);
+    ctx.ellipse(cx2 - 30, cy2 - 6, 26, 10, 0, 0, 6.29);
+    ctx.fill();
+  }
+
+  /* two parallax layers of hills */
+  ctx.fillStyle = world.hills;
+  ctx.globalAlpha = .45;
+  const h2 = -(g.camX * 0.2) % 700;
+  for (let x = h2 - 700; x < W + 700; x += 700) {
+    ctx.beginPath(); ctx.arc(x + 350, 580, 290, Math.PI, 0); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const hOff = -(g.camX * 0.45) % 500;
+  for (let x = hOff - 500; x < W + 500; x += 500) {
+    ctx.beginPath(); ctx.arc(x + 250, 545, 195, Math.PI, 0); ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(-g.camX, 0);
+
+  /* platforms */
+  for (const pl of g.plats) {
+    if (pl.ground) {
+      /* dirt with speckles */
+      ctx.fillStyle = world.ground;
+      ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+      ctx.fillStyle = "rgba(0,0,0,.12)";
+      for (let sx = pl.x + 13; sx < pl.x + pl.w - 8; sx += 47) {
+        const r1 = Math.abs(Math.sin(sx * 12.9898)) % 1;
+        ctx.fillRect(sx, pl.y + 24 + r1 * 36, 5, 3);
+      }
+      /* grass cap + shadow line + blades */
+      ctx.fillStyle = world.groundTop;
+      ctx.fillRect(pl.x, pl.y, pl.w, 14);
+      ctx.fillStyle = "rgba(0,0,0,.18)";
+      ctx.fillRect(pl.x, pl.y + 14, pl.w, 3);
+      ctx.fillStyle = world.groundTop;
+      for (let sx = pl.x + 6; sx < pl.x + pl.w - 4; sx += 23) {
+        const r2 = Math.abs(Math.sin(sx * 7.13)) % 1;
+        ctx.fillRect(sx, pl.y - 3 - r2 * 4, 3, 5 + r2 * 4);
+      }
+    } else {
+      /* wooden platform with grass top */
+      ctx.fillStyle = "#5d4126";
+      roundRect(pl.x - 1, pl.y - 1, pl.w + 2, pl.h + 2, 7);
+      ctx.fillStyle = "#a9794b";
+      roundRect(pl.x + 1, pl.y + 5, pl.w - 2, pl.h - 6, 5);
+      ctx.fillStyle = "rgba(0,0,0,.12)";
+      for (let sx = pl.x + 14; sx < pl.x + pl.w - 8; sx += 26) ctx.fillRect(sx, pl.y + 7, 2, pl.h - 9);
+      ctx.fillStyle = world.groundTop;
+      roundRect(pl.x - 1, pl.y - 3, pl.w + 2, 8, 4);
+    }
+  }
+
+  /* ground decorations */
+  ctx.font = "28px serif";
+  for (const d of g.groundDeco) ctx.fillText(d.e, d.x, 464);
+
+  /* goal door / school */
+  if (!world.boss) {
+    const doorX = world.width - 70;
+    ctx.font = "64px serif";
+    ctx.fillText("🏫", doorX, 462);
+    ctx.font = "700 15px Rubik";
+    ctx.fillStyle = "#2b2b45";
+    const remaining = world.need - g.collected;
+    ctx.fillText(remaining > 0 ? `צריך עוד ${remaining}` : "הכניסה פתוחה!", doorX, 490);
+    if (remaining <= 0) {
+      ctx.font = "26px serif";
+      ctx.fillText("✨", doorX - 40, 420 + Math.sin(g.time * 4) * 8);
+      ctx.fillText("✨", doorX + 40, 410 + Math.cos(g.time * 4) * 8);
+    }
+  }
+
+  /* items */
+  ctx.font = "30px serif";
+  for (const it of g.items) {
+    if (!it.taken) ctx.fillText(it.emoji, it.x, it.y + Math.sin(g.time * 3 + it.x) * 5);
+  }
+
+  /* rocket warnings + rockets */
+  for (const w of g.warns) {
+    ctx.font = "32px serif";
+    ctx.globalAlpha = .5 + Math.sin(g.time * 14) * .4;
+    ctx.fillText("⚠️", w.x, 70);
+    ctx.globalAlpha = 1;
+  }
+  ctx.font = "36px serif";
+  for (const r of g.rockets) {
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    ctx.rotate(Math.PI);
+    ctx.fillText("🚀", 0, 0);
+    ctx.restore();
+  }
+
+  /* enemies */
+  for (const e of g.enemies) {
+    if (e.dead) continue;
+    ctx.font = (e.sucked > 0 ? 26 : 32) + "px serif";
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.type === "walk" && e.vx > 0) ctx.scale(-1, 1);
+    ctx.fillText(e.emoji, 0, 10);
+    ctx.restore();
+    e.sucked = 0;
+  }
+
+  /* boss */
+  if (g.boss && g.boss.hp > 0) drawBoss();
+
+  /* stars */
+  ctx.font = "28px serif";
+  for (const s of g.stars) ctx.fillText("⭐", s.x, s.y + 8);
+
+  /* particles */
+  for (const pt of g.parts) {
+    ctx.font = pt.size + "px serif";
+    ctx.globalAlpha = Math.max(0, pt.life * 2);
+    ctx.fillText(pt.emoji, pt.x, pt.y);
+    ctx.globalAlpha = 1;
+  }
+
+  /* player */
+  drawPlayer();
+
+  ctx.restore();
+
+  drawHud();
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.fill();
+}
+
+/* ================================================================
+   pixel-art sprite of the heroine — long dark hair, navy pinstripe
+   suit, white top, black shoes (modeled on the reference sheet)
+================================================================ */
+const SPR_W = 26, SPR_H = 40;
+const PAL = {
+  H: "#15151c",  // hair base
+  G: "#30303e",  // hair shine
+  S: "#e2a87c",  // skin
+  T: "#c08456",  // skin shadow
+  N: "#2a3253",  // suit navy
+  D: "#1d2440",  // lapels / fabric shadow
+  L: "#414b78",  // pinstripe highlight
+  W: "#f2efe7",  // white top
+  V: "#d9d5c9",  // white top shadow
+  K: "#0d0d12",  // heels
+  E: "#181820",  // eyes
+  B: "#2a1d12",  // brows
+  O: "#f4f1ea",  // eye glint
+  M: "#a85a52",  // lips
+  R: "#d9d9e2"   // earring
+};
+const SPRITES = {};
+
+function buildSprite(legs, face) {
+  const c = document.createElement("canvas");
+  c.width = SPR_W; c.height = SPR_H;
+  const g = c.getContext("2d");
+  const px = (x, y, w, h, col) => { g.fillStyle = PAL[col]; g.fillRect(x, y, w, h); };
+
+  /* legs (straight suit trousers, shaded inner edge) + black pumps */
+  if (legs === "air") {
+    px(10, 27, 3, 6, "N"); px(12, 27, 1, 6, "D");
+    px(14, 27, 3, 6, "N"); px(16, 27, 1, 6, "D");
+    px(9, 33, 5, 2, "K"); px(13, 33, 5, 2, "K");
+  } else if (legs === "walk1") {
+    px(8, 27, 3, 9, "N"); px(10, 27, 1, 9, "D");
+    px(16, 27, 3, 9, "N"); px(18, 27, 1, 9, "D");
+    px(7, 36, 5, 2, "K"); px(8, 38, 1, 1, "K");
+    px(15, 36, 5, 2, "K"); px(16, 38, 1, 1, "K");
+  } else if (legs === "walk2") {
+    px(11, 27, 2, 9, "N");
+    px(14, 27, 2, 9, "N"); px(15, 27, 1, 9, "D");
+    px(10, 36, 4, 2, "K"); px(11, 38, 1, 1, "K");
+    px(13, 36, 4, 2, "K"); px(14, 38, 1, 1, "K");
+  } else { /* idle */
+    px(10, 27, 3, 9, "N"); px(12, 27, 1, 9, "D");
+    px(14, 27, 3, 9, "N"); px(16, 27, 1, 9, "D");
+    px(9, 36, 5, 2, "K"); px(10, 38, 1, 1, "K");
+    px(13, 36, 5, 2, "K"); px(14, 38, 1, 1, "K");
+  }
+  /* trouser pinstripes */
+  if (legs !== "air") for (const r of [28, 30, 32, 34]) { px(11, r, 1, 1, "L"); px(15, r, 1, 1, "L"); }
+
+  /* hips */
+  px(9, 24, 9, 3, "N");
+  px(9, 24, 1, 3, "D"); px(17, 24, 1, 3, "D");
+
+  /* shoulders + jacket */
+  px(7, 13, 12, 1, "N");
+  px(8, 14, 11, 10, "N");
+  /* white camisole in the open jacket (wide at chest, narrow at waist) */
+  px(12, 13, 3, 1, "W");
+  px(11, 14, 5, 4, "W");
+  px(12, 18, 3, 3, "W");
+  px(12, 19, 1, 2, "V");
+  px(13, 21, 1, 1, "W");
+  /* dark lapels framing the opening */
+  px(11, 13, 1, 1, "D"); px(15, 13, 1, 1, "D");
+  px(10, 14, 1, 4, "D"); px(16, 14, 1, 4, "D");
+  px(11, 18, 1, 3, "D"); px(15, 18, 1, 3, "D");
+  px(12, 21, 1, 1, "D"); px(14, 21, 1, 1, "D");
+  /* jacket pinstripes (dotted) */
+  for (const r of [15, 17, 19, 21, 23]) { px(9, r, 1, 1, "L"); px(17, r, 1, 1, "L"); }
+
+  /* arms + hands */
+  px(5, 14, 2, 9, "N"); px(19, 14, 2, 9, "N");
+  px(6, 14, 1, 9, "D"); px(19, 14, 1, 9, "D");
+  px(5, 23, 2, 2, "S"); px(19, 23, 2, 2, "S");
+
+  /* neck */
+  px(12, 12, 3, 1, "S");
+
+  /* head: crown, face, hair framing, back hair */
+  px(11, 0, 5, 1, "H");
+  px(9, 1, 9, 1, "H");
+  px(8, 2, 10, 2, "H");
+  px(10, 4, 7, 8, "S");
+  px(8, 3, 2, 10, "H"); px(17, 3, 2, 10, "H");
+  px(7, 5, 1, 9, "H"); px(19, 5, 1, 9, "H");
+  /* hair shine (side part) */
+  px(14, 1, 2, 1, "G"); px(16, 2, 1, 2, "G"); px(17, 4, 1, 3, "G");
+  /* brows */
+  px(11, 6, 2, 1, "B"); px(14, 6, 2, 1, "B");
+  /* eyes — almond shaped, subtle */
+  px(11, 7, 2, 1, "E"); px(14, 7, 2, 1, "E");
+  px(11, 8, 2, 1, "T"); px(14, 8, 2, 1, "T");
+  /* earring */
+  px(17, 8, 1, 1, "R");
+  /* nose + cheek shading */
+  px(13, 9, 1, 1, "T");
+  px(10, 9, 1, 1, "T"); px(16, 9, 1, 1, "T");
+  /* mouth by state */
+  if (face === "inhale") {
+    px(12, 9, 3, 2, "E");
+  } else if (face === "full") {
+    px(9, 7, 1, 3, "S"); px(17, 7, 1, 3, "S");
+    px(13, 10, 1, 1, "M");
+  } else {
+    px(12, 10, 3, 1, "M");
+  }
+  /* chin shadow */
+  px(12, 11, 3, 1, "T");
+
+  /* long front hair falling over the chest (like the reference) */
+  px(8, 13, 1, 7, "H"); px(18, 13, 1, 7, "H");
+  px(9, 19, 1, 3, "H"); px(17, 19, 1, 3, "H");
+  px(8, 13, 1, 3, "G");
+
+  return c;
+}
+
+function getSprite(legs, face) {
+  const k = legs + "_" + face;
+  return SPRITES[k] || (SPRITES[k] = buildSprite(legs, face));
+}
+
+function drawPlayer() {
+  const p = game.player;
+  if (p.inv > 0 && Math.floor(p.inv * 12) % 2 === 0) return; // blink
+
+  const run = p.onGround && Math.abs(p.vx) > 40;
+  const legs = !p.onGround ? "air"
+    : run ? (Math.floor(p.anim * 9) % 2 ? "walk1" : "walk2")
+    : "idle";
+  const face = p.inhaling ? "inhale" : (p.full ? "full" : "normal");
+  const spr = getSprite(legs, face);
+  const w = SPR_W * 2, h = SPR_H * 2;
+  const feetY = p.y + p.r;
+
+  /* soft shadow on the ground */
+  if (p.onGround) {
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    ctx.beginPath(); ctx.ellipse(p.x, feetY + 2, 16, 4, 0, 0, 6.29); ctx.fill();
+  }
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(p.x, feetY);
+  if (p.facing < 0) ctx.scale(-1, 1);
+  ctx.drawImage(spr, -w / 2, -h + 2, w, h);
+  ctx.restore();
+
+  /* balloon while floating */
+  if (p.puffed) {
+    ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(p.x, feetY - h + 8); ctx.lineTo(p.x + 5, feetY - h - 14); ctx.stroke();
+    ctx.font = "26px serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🎈", p.x + 5, feetY - h - 12);
+  }
+
+  /* suction lines while inhaling */
+  if (p.inhaling) {
+    ctx.strokeStyle = "rgba(255,255,255,.7)";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      const off = (game.time * 240 + i * 50) % 150;
+      ctx.beginPath();
+      ctx.moveTo(p.x + p.facing * (40 + 150 - off), feetY - 62 + i * 13);
+      ctx.lineTo(p.x + p.facing * (40 + 110 - off), feetY - 54 + i * 9);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawBoss() {
+  const b = game.boss;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  if (b.hurtT > 0) ctx.globalAlpha = .6;
+
+  /* body */
+  ctx.fillStyle = b.hurtT > 0 ? "#e74c3c" : "#7d3cb5";
+  ctx.beginPath();
+  ctx.ellipse(0, -b.h / 2, b.w / 2, b.h / 2, 0, 0, 6.29);
+  ctx.fill();
+  /* spikes hair */
+  ctx.fillStyle = "#5b2a8a";
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 20 - 10, -b.h + 8);
+    ctx.lineTo(i * 20, -b.h - 22);
+    ctx.lineTo(i * 20 + 10, -b.h + 8);
+    ctx.fill();
+  }
+  /* eyes */
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.ellipse(-22, -b.h * .6, 14, 17, 0, 0, 6.29); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(22, -b.h * .6, 14, 17, 0, 0, 6.29); ctx.fill();
+  ctx.fillStyle = "#e8252c";
+  const px = Math.sign(game.player.x - b.x) * 5;
+  ctx.beginPath(); ctx.arc(-22 + px, -b.h * .58, 7, 0, 6.29); ctx.fill();
+  ctx.beginPath(); ctx.arc(22 + px, -b.h * .58, 7, 0, 6.29); ctx.fill();
+  /* angry brows */
+  ctx.strokeStyle = "#2c1248"; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-36, -b.h * .78); ctx.lineTo(-8, -b.h * .68); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(36, -b.h * .78); ctx.lineTo(8, -b.h * .68); ctx.stroke();
+  /* mouth */
+  ctx.fillStyle = "#2c1248";
+  ctx.beginPath(); ctx.ellipse(0, -b.h * .28, 26, 14, 0, 0, Math.PI); ctx.fill();
+  ctx.fillStyle = "#fff";
+  for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 10 - 4, -b.h * .28); ctx.lineTo(i * 10, -b.h * .28 + 9); ctx.lineTo(i * 10 + 4, -b.h * .28); ctx.fill(); }
+
+  ctx.globalAlpha = 1;
+  /* label */
+  ctx.font = "700 15px Rubik";
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.fillText("מפלצת החטיבה", 0, -b.h - 34);
+  ctx.restore();
+}
+
+function drawHud() {
+  const g = game, p = g.player, world = g.world;
+
+  /* translucent top bar */
+  ctx.fillStyle = "rgba(13,16,38,.5)";
+  roundRect(10, 8, W - 20, 46, 14);
+
+  /* hearts (right) */
+  ctx.font = "23px serif";
+  ctx.textAlign = "right";
+  let hearts = "";
+  for (let i = 0; i < 3; i++) hearts = (i < p.hp ? "❤️" : "🖤") + hearts;
+  ctx.fillText(hearts, W - 24, 40);
+
+  /* items counter (left, LTR so digits keep order) */
+  if (!world.boss) {
+    ctx.font = "700 19px Rubik";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.direction = "ltr";
+    const itemIcon = Array.isArray(world.item) ? "🎁" : world.item;
+    ctx.fillText(`${itemIcon} ${g.collected} / ${world.need}`, 26, 39);
+    ctx.direction = "inherit";
+  }
+
+  /* level name (center) */
+  ctx.textAlign = "center";
+  ctx.font = "700 17px Rubik";
+  ctx.fillStyle = "rgba(255,255,255,.95)";
+  ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
+
+  /* full indicator */
+  if (p.full) {
+    ctx.font = "700 15px Rubik";
+    ctx.fillStyle = "#ffd93d";
+    ctx.fillText("X = לירות כוכב! ⭐", W / 2, 76);
+  }
+
+  /* boss hp bar */
+  if (g.boss) {
+    const bw = 320, bx = (W - bw) / 2;
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    roundRect(bx, 62, bw, 16, 8);
+    if (g.boss.hp > 0) {
+      ctx.fillStyle = "#b455e8";
+      roundRect(bx, 62, Math.max(14, bw * (g.boss.hp / g.boss.maxHp)), 16, 8);
+    }
+  }
+}
+
+/* expose for debugging */
+window.__game = () => game;
+window.__step = (dt, n) => { for (let i = 0; i < (n || 1); i++) { if (!game || game.over) break; update(dt || 1 / 60); } };
+window.__draw = () => { if (game) draw(); };
+window.__keys = keys;
+window.__press = { jump: () => { jumpPressed = true; }, suck: () => { suckPressed = true; } };
+
+loadProgress();
+$("#player-name").addEventListener("keydown", e => { if (e.key === "Enter") startGame(); });
+</script>
+</body>
+</html>
