@@ -260,12 +260,11 @@
     body.touch #tc-suck { background: rgba(91,197,242,.5); }
     #quit-btn { font-size: .75rem; padding: 6px 11px; }
 
-    /* map: shrink the title and grow the campus to nearly full height */
-    #screen-map { padding: 3px; justify-content: center; }
-    .map-title h1 { font-size: 1.1rem; margin: 0; }
-    .map-title p { display: none; }
-    #yard { margin-top: 4px; max-width: none; }
-    #yard svg { width: min(100%, (100dvh - 44px) * 1000 / 720); margin: 0 auto; }
+    /* map: hide the title and grow the campus to fill the screen */
+    #screen-map { padding: 2px; justify-content: center; }
+    .map-title { display: none; }
+    #yard { margin-top: 0; max-width: none; }
+    #yard svg { width: min(100%, (100dvh - 6px) * 1000 / 720); margin: 0 auto; }
   }
 
   /* feedback + overlay */
@@ -341,6 +340,7 @@
     <input type="text" id="player-name" maxlength="20" placeholder="איך קוראים לך?">
     <br>
     <button class="btn" onclick="startGame()">מתחילים את כיתה א'! 🚀</button>
+    <div style="margin-top:14px;font-size:.8rem;color:#aaa">גרסה 7 · 13.6</div>
   </div>
 </section>
 
@@ -465,7 +465,7 @@ const LEVELS = [
   {
     grade: "כיתה ו'", emoji: "👑", name: "הבוס הגדול: מפלצת החטיבה",
     story: `סוף־סוף הכי גדולים בבית הספר! חנכתם את כיתות א', זכיתם במקום ראשון באולימפיאדת החלל... ועכשיו, בשער בית הספר, מחכה לכם המכשול האחרון: מפלצת החטיבה!`,
-    goal: "קרב בוס! 👾 שאפו את ספרי החטיבה המעופפים 📚 עם X וירו אותם בחזרה על המפלצת! 6 פגיעות והיא נופלת!"
+    goal: "קרב בוס! 👾 געו בספרי החטיבה המעופפים 📚 כדי לאסוף אותם, ואז לחצו X (או 🌀) כדי לירות אותם על המפלצת! 6 פגיעות והיא נופלת!"
   }
 ];
 
@@ -486,7 +486,8 @@ function startGame() {
 const MAP_POS = [[688, 474], [500, 533], [312, 474], [278, 359], [421, 265], [615, 276]];
 /* doors face the central plaza (inward), so the hero stands beside the classroom on the path */
 const MAP_DIR = [[-.92, -.39], [0, -1], [.92, -.39], [.99, .16], [.52, .86], [-.70, .72]];
-const CHAR_POS = [[653, 421], [500, 457], [347, 421], [316, 327], [441, 260], [588, 265]];
+/* the hero stands centered in front of its classroom (slightly overlapping the front) */
+const CHAR_POS = [[688, 486], [500, 545], [312, 486], [278, 371], [421, 277], [615, 288]];
 const MAP_COLORS = ["#b9a78f", "#a7b0a0", "#c3b298", "#a59d96", "#afa3b9", "#bfa0a0"];
 const ROOF_COLORS = ["#cdbca6", "#bdc5b6", "#d4c6ae", "#b9b2ab", "#c2b7cd", "#d1b5b5"];
 
@@ -500,7 +501,7 @@ function stationSvg(i, lv) {
   return `
   <g class="${cls}" data-station="${i}" transform="translate(${x},${y})">
     ${current ? `<ellipse class="glow" cx="0" cy="0" rx="100" ry="76" fill="#ffd93d"/>` : ""}
-    <ellipse cx="${dx * 84}" cy="${dy * 58}" rx="24" ry="13" fill="#e3ddcf"/>
+    <ellipse cx="0" cy="54" rx="26" ry="13" fill="#e3ddcf"/>
     <rect x="-52" y="-34" width="116" height="84" rx="9" fill="rgba(0,0,0,.14)"/>
     <rect x="-58" y="-42" width="116" height="84" rx="9" fill="${MAP_COLORS[i]}" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
     <rect x="-48" y="-32" width="96" height="64" rx="6" fill="${ROOF_COLORS[i]}"/>
@@ -508,9 +509,10 @@ function stationSvg(i, lv) {
     <rect x="-40" y="-6" width="28" height="12" rx="2" fill="rgba(255,255,255,.3)"/>
     <rect x="20" y="-24" width="13" height="13" rx="2" fill="rgba(0,0,0,.18)"/>
     <rect x="20" y="-4" width="13" height="13" rx="2" fill="rgba(0,0,0,.18)"/>
-    <circle cx="2" cy="18" r="5" fill="rgba(0,0,0,.12)"/>
-    <rect x="${dx * 50 - 8}" y="${dy * 34 - 8}" width="16" height="16" rx="3" fill="#5d4a38"/>
-    ${locked ? `<text x="0" y="9" font-size="26" text-anchor="middle">🔒</text>` : ""}
+    <circle cx="2" cy="6" r="5" fill="rgba(0,0,0,.12)"/>
+    <rect x="-9" y="22" width="18" height="22" rx="3" fill="#5d4a38"/>
+    <circle cx="5" cy="34" r="1.6" fill="#e0b33c"/>
+    ${locked ? `<text x="0" y="6" font-size="26" text-anchor="middle">🔒</text>` : ""}
     <rect x="-52" y="-80" width="104" height="27" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
     <text x="-7" y="-60" font-size="16" font-weight="800" text-anchor="middle" fill="#2b2b45" font-family="Rubik">${lv.grade}</text>
     <text x="36" y="-60" font-size="15" text-anchor="middle">${locked ? "" : lv.emoji}</text>
@@ -531,10 +533,8 @@ function charSvg(x, y) {
 }
 
 function renderMap() {
-  /* which station the hero stands at: next to play, or the last one if all done */
-  const allDone = state.stars[5] > 0;
-  const cur = allDone ? 5 : state.unlocked;
-  const [chx, chy] = CHAR_POS[cur];
+  /* the hero stands in the centre of the courtyard, surrounded by the classrooms */
+  const chx = 500, chy = 452;
 
   const tree = (x, y, s) => `
     <g transform="translate(${x},${y}) scale(${s || 1})">
@@ -805,10 +805,12 @@ function startMapNPCs() {
     img.setAttribute("x", "-23"); img.setAttribute("y", "-36");
     img.setAttribute("width", "46"); img.setAttribute("height", "70");
     img.setAttribute("style", "image-rendering:pixelated");
+    const start = route.pts[0];
+    /* position it at its starting waypoint immediately, so it never flashes at the SVG origin */
+    g.setAttribute("transform", `translate(${start[0]},${start[1]}) scale(1,1)`);
     g.appendChild(sh); g.appendChild(img);
     svg.appendChild(g);
 
-    const start = route.pts[0];
     mapNpcs.push({
       idx, frames, g, img,
       pts: route.pts, loop: route.loop,
@@ -1743,9 +1745,18 @@ function update(dt) {
       e.x += Math.cos(e.t * 1.4) * 60 * dt;
       e.y = e.baseY + Math.sin(e.t * 2.2) * 38;
     }
-    /* hit player */
-    if (p.inv <= 0 && Math.abs(e.x - p.x) < e.r + p.r - 8 && Math.abs(e.y - p.y) < e.r + p.r - 8) {
-      hurtPlayer();
+    /* touch handling */
+    if (Math.abs(e.x - p.x) < e.r + p.r - 8 && Math.abs(e.y - p.y) < e.r + p.r - 8) {
+      if (world.boss && e.type === "fly") {
+        /* in the boss fight, just touching a flying book loads it — ready to throw back */
+        e.dead = true;
+        if (!p.full) p.full = true;
+        playSound("good");
+        spawnBurst(e.x, e.y, "✨", 4);
+        continue;
+      } else if (p.inv <= 0) {
+        hurtPlayer();
+      }
     }
   }
 
