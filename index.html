@@ -2,7 +2,12 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a1c3a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="שורדים את היסודי">
 <title>שורדים את היסודי — בית הספר בכור לוי</title>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -16,7 +21,7 @@
     --good: #4ecb71;
     --blue: #5bc5f2;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body {
     font-family: 'Rubik', 'Segoe UI', sans-serif;
@@ -24,8 +29,15 @@
     color: var(--ink);
     min-height: 100vh;
     overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
   }
-  .screen { display: none; min-height: 100vh; padding: 24px 16px; }
+  .screen {
+    display: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
   .screen.active { display: flex; flex-direction: column; align-items: center; }
 
   .panel {
@@ -141,48 +153,81 @@
   .map-title p { color: #cfd2ff; }
 
   /* ---- Game ---- */
-  #screen-game { padding: 8px; justify-content: center; }
+  #screen-game {
+    padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    justify-content: center;
+  }
   #game-stage {
     position: relative;
     width: 100%;
     max-width: 1100px;
   }
   canvas {
-    width: 100%;
+    /* keep the whole 16:9 board on screen without distortion: take the smaller
+       of the container width and the width that the height cap allows. */
+    width: min(100%, (100dvh - 120px) * 16 / 9);
+    aspect-ratio: 16 / 9;
     display: block;
+    margin: 0 auto;
     border-radius: 18px;
     box-shadow: 0 12px 40px rgba(0,0,0,.45);
     background: #aee6ff;
     touch-action: none;
   }
+  /* when the touch bar is hidden (desktop), the canvas can use full height */
+  body:not(.touch) canvas { width: min(100%, (100dvh - 40px) * 16 / 9); }
   #quit-btn {
     position: absolute; top: 10px; left: 10px;
     font-family: inherit; font-weight: 800; font-size: .85rem;
     border: none; border-radius: 12px; padding: 8px 14px;
     background: rgba(20,22,50,.65); color: #fff; cursor: pointer;
+    z-index: 5;
   }
 
-  /* touch controls */
-  .touch-btn {
-    position: absolute;
-    bottom: 14px;
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.35);
-    border: 3px solid rgba(255,255,255,.7);
-    color: #2b2b45;
-    font-size: 1.5rem; font-weight: 800;
+  /* touch controls: a separate bar below the canvas, never covering the game */
+  #touch-bar {
     display: none;
-    align-items: center; justify-content: center;
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 12px;
+    justify-content: space-between;
+    align-items: center;
+    direction: ltr;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
   }
-  body.touch .touch-btn { display: flex; }
-  #tc-right { right: 14px; }
-  #tc-left  { right: 92px; }
-  #tc-jump  { left: 92px; background: rgba(255,182,193,.55); }
-  #tc-suck  { left: 14px; background: rgba(135,206,250,.55); }
+  body.touch #touch-bar { display: flex; }
+  .tb-group { display: flex; gap: 16px; }
+  .touch-btn {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.16);
+    border: 3px solid rgba(255,255,255,.5);
+    color: #fff;
+    font-size: 1.8rem; font-weight: 800;
+    display: flex;
+    align-items: center; justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+  }
+  .touch-btn:active { background: rgba(255,255,255,.4); transform: scale(.93); }
+  #tc-jump { background: rgba(255,107,139,.35); }
+  #tc-suck { background: rgba(91,197,242,.35); }
+
+  #rotate-hint {
+    display: none;
+    color: var(--accent2);
+    font-weight: 700;
+    font-size: .9rem;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #rotate-hint { display: block; }
+  }
 
   /* feedback + overlay */
   .overlay {
@@ -271,13 +316,20 @@
 
 <!-- GAME -->
 <section class="screen" id="screen-game">
+  <div id="rotate-hint">📱 לחוויה הטובה ביותר — סובבו את המכשיר לרוחב</div>
   <div id="game-stage">
     <canvas id="game-canvas" width="960" height="540"></canvas>
     <button id="quit-btn" onclick="quitToMap()">🗺️ למפה</button>
-    <div class="touch-btn" id="tc-left">▸</div>
-    <div class="touch-btn" id="tc-right">◂</div>
-    <div class="touch-btn" id="tc-jump">🎈</div>
-    <div class="touch-btn" id="tc-suck">🌀</div>
+  </div>
+  <div id="touch-bar">
+    <div class="tb-group">
+      <div class="touch-btn" id="tc-left">◀</div>
+      <div class="touch-btn" id="tc-right">▶</div>
+    </div>
+    <div class="tb-group">
+      <div class="touch-btn" id="tc-suck">🌀</div>
+      <div class="touch-btn" id="tc-jump">🎈</div>
+    </div>
   </div>
 </section>
 
@@ -477,6 +529,92 @@ function renderMap() {
       <text x="0" y="6" font-size="13" font-weight="800" text-anchor="middle" fill="#fff" font-family="Rubik">${label}</text>
     </g>`;
 
+  /* the Bechor Levi school crest: sun, tree, books, open book, music note */
+  const emblem = (cx, cy, r) => {
+    const rays = [];
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      rays.push(`<line x1="${(-20 + Math.cos(a) * 7).toFixed(1)}" y1="${(-19 + Math.sin(a) * 7).toFixed(1)}" x2="${(-20 + Math.cos(a) * 11).toFixed(1)}" y2="${(-19 + Math.sin(a) * 11).toFixed(1)}" stroke="#f3c12f" stroke-width="2" stroke-linecap="round"/>`);
+    }
+    return `
+    <g transform="translate(${cx},${cy}) scale(${r / 40})">
+      <ellipse cx="0" cy="3" rx="42" ry="42" fill="rgba(0,0,0,.18)"/>
+      <circle r="40" fill="#c3e6f7" stroke="#fff" stroke-width="3"/>
+      <circle r="40" fill="none" stroke="#5f93b8" stroke-width="1.5"/>
+      <!-- sun -->
+      ${rays.join("")}
+      <circle cx="-20" cy="-19" r="6.5" fill="#f3c12f"/>
+      <!-- tree -->
+      <rect x="0" y="-13" width="3" height="9" fill="#8a5a33"/>
+      <circle cx="2" cy="-19" r="9" fill="#57a94e"/>
+      <circle cx="-1" cy="-22" r="4.5" fill="#6fc164"/>
+      <!-- standing books -->
+      <g transform="rotate(6 20 -14)">
+        <rect x="13" y="-23" width="4" height="15" rx="1" fill="#c0504d"/>
+        <rect x="17" y="-25" width="4" height="17" rx="1" fill="#4f81bd"/>
+        <rect x="21" y="-22" width="4" height="14" rx="1" fill="#9bbb59"/>
+      </g>
+      <!-- open book -->
+      <path d="M0,9 L-15,12 L-15,21 L0,18 Z" fill="#ffffff" stroke="#c9b79a" stroke-width="1"/>
+      <path d="M0,9 L15,12 L15,21 L0,18 Z" fill="#f1ece1" stroke="#c9b79a" stroke-width="1"/>
+      <line x1="-12" y1="13.5" x2="-3" y2="12" stroke="#bcae96" stroke-width="1"/>
+      <line x1="-12" y1="16.5" x2="-3" y2="15" stroke="#bcae96" stroke-width="1"/>
+      <line x1="3" y1="12" x2="12" y2="13.5" stroke="#bcae96" stroke-width="1"/>
+      <line x1="3" y1="15" x2="12" y2="16.5" stroke="#bcae96" stroke-width="1"/>
+      <!-- music note -->
+      <g transform="translate(-21,11)">
+        <ellipse cx="-2" cy="4" rx="3.5" ry="2.6" fill="#2b2b45" transform="rotate(-20 -2 4)"/>
+        <rect x="1" y="-6" width="1.6" height="10" fill="#2b2b45"/>
+        <path d="M2.6,-6 q5,1 4,6" fill="none" stroke="#2b2b45" stroke-width="1.6"/>
+      </g>
+      <!-- name -->
+      <text y="33" font-size="9.5" font-weight="800" text-anchor="middle" fill="#234a63" font-family="Rubik">בכור לוי</text>
+    </g>`;
+  };
+
+  /* Meir the guard — modeled on his photo: an elderly man with grey hair,
+     a navy polo with a small chest badge, khaki trousers and dark shoes */
+  const guard = (cx, cy) => `
+    <g transform="translate(${cx},${cy})">
+      <ellipse cx="0" cy="19" rx="12" ry="3.5" fill="rgba(0,0,0,.2)"/>
+      <!-- khaki trousers -->
+      <rect x="-6" y="5" width="5" height="11" fill="#c9a36a"/>
+      <rect x="1" y="5" width="5" height="11" fill="#c9a36a"/>
+      <rect x="-6" y="5" width="5" height="11" fill="none" stroke="#b58d52" stroke-width=".6"/>
+      <rect x="1" y="5" width="5" height="11" fill="none" stroke="#b58d52" stroke-width=".6"/>
+      <!-- dark shoes -->
+      <rect x="-7" y="15" width="6" height="3" rx="1.5" fill="#15151c"/>
+      <rect x="1" y="15" width="6" height="3" rx="1.5" fill="#15151c"/>
+      <!-- navy polo + short sleeves with bare forearms -->
+      <rect x="-9" y="-4" width="3.5" height="6" rx="1.5" fill="#1f2740"/>
+      <rect x="5.5" y="-4" width="3.5" height="6" rx="1.5" fill="#1f2740"/>
+      <rect x="-9" y="1.5" width="3.5" height="4" rx="1.5" fill="#d2a77a"/>
+      <rect x="5.5" y="1.5" width="3.5" height="4" rx="1.5" fill="#d2a77a"/>
+      <rect x="-8" y="-5" width="16" height="11" rx="3" fill="#1f2740"/>
+      <!-- polo collar -->
+      <path d="M-3,-5 L0,-2 L3,-5 Z" fill="#e2a87c"/>
+      <path d="M-3.5,-5 L-1,-5 L-1,-2.5 Z" fill="#283357"/>
+      <path d="M3.5,-5 L1,-5 L1,-2.5 Z" fill="#283357"/>
+      <!-- small white chest badge -->
+      <rect x="2" y="-2.5" width="4" height="3" rx="0.6" fill="#f2efe7"/>
+      <!-- head: elderly tan face -->
+      <circle cx="0" cy="-9" r="6" fill="#d2a77a"/>
+      <!-- grey hair: thin on top, fuller at the sides -->
+      <path d="M-6,-10 a6,6 0 0,1 12,0 L4.5,-10.5 Q0,-12.5 -4.5,-10.5 Z" fill="#cccccc"/>
+      <rect x="-6.2" y="-11" width="2" height="4.5" rx="1" fill="#cccccc"/>
+      <rect x="4.2" y="-11" width="2" height="4.5" rx="1" fill="#cccccc"/>
+      <!-- friendly face: brows, eyes, smile -->
+      <rect x="-3.2" y="-10" width="2" height="1" rx=".5" fill="#bdbdbd"/>
+      <rect x="1.2" y="-10" width="2" height="1" rx=".5" fill="#bdbdbd"/>
+      <circle cx="-2.2" cy="-8.5" r="0.9" fill="#2b2b2b"/>
+      <circle cx="2.2" cy="-8.5" r="0.9" fill="#2b2b2b"/>
+      <path d="M-2.5,-6 q2.5,2.2 5,0" fill="none" stroke="#9a5a4a" stroke-width="1.1" stroke-linecap="round"/>
+      <g transform="translate(0,-30)">
+        <rect x="-44" y="-12" width="88" height="22" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
+        <text x="0" y="3" font-size="13" font-weight="800" text-anchor="middle" fill="#1f2740" font-family="Rubik">🛡️ מאיר השומר</text>
+      </g>
+    </g>`;
+
   $("#yard").innerHTML = `
   <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">
     <rect width="1000" height="720" fill="#e9e7dd"/>
@@ -545,21 +683,22 @@ function renderMap() {
     <circle cx="500" cy="395" r="6" fill="#fff" opacity=".8"/>
     ${bench(500, 318, 0)}${bench(500, 472, 0)}${bench(424, 395, 90)}${bench(576, 395, 90)}
 
-    <!-- main school building (top-down) -->
-    <g transform="translate(500,86)">
-      <rect x="-109" y="-32" width="230" height="82" rx="10" fill="rgba(0,0,0,.14)"/>
-      <rect x="-115" y="-40" width="230" height="82" rx="10" fill="#b3a08c" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
-      <rect x="-103" y="-29" width="206" height="60" rx="6" fill="#c8b6a0"/>
-      ${[-88, -52, -16, 20, 56].map(x => `<rect x="${x}" y="-21" width="24" height="11" rx="2" fill="rgba(255,255,255,.45)"/>`).join("")}
-      <circle cx="78" cy="14" r="9" fill="rgba(0,0,0,.15)"/>
-      <rect x="-9" y="34" width="18" height="14" rx="3" fill="#5d4a38"/>
-      <rect x="-100" y="-8" width="200" height="30" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
-      <text x="0" y="14" font-size="19" font-weight="800" text-anchor="middle" fill="#2b2b45" font-family="Rubik">🏫 בית הספר בכור לוי</text>
+    <!-- main school building (top-down) with the Bechor Levi crest -->
+    <g transform="translate(500,92)">
+      <rect x="-109" y="-32" width="230" height="86" rx="10" fill="rgba(0,0,0,.14)"/>
+      <rect x="-115" y="-40" width="230" height="86" rx="10" fill="#b3a08c" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+      <rect x="-103" y="-31" width="206" height="38" rx="6" fill="#c8b6a0"/>
+      ${[-94, 62].map(x => `<rect x="${x}" y="-24" width="22" height="11" rx="2" fill="rgba(255,255,255,.45)"/>`).join("")}
+      <rect x="-9" y="38" width="18" height="14" rx="3" fill="#5d4a38"/>
+      <rect x="-100" y="13" width="200" height="28" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
+      <text x="0" y="32" font-size="18" font-weight="800" text-anchor="middle" fill="#234a63" font-family="Rubik">בית הספר בכור לוי</text>
     </g>
+    ${emblem(500, 44, 33)}
 
     <!-- gates -->
     ${gate(438, 700, -35, "כניסת תלמידים")}
-    <text x="395" y="660" font-size="22" text-anchor="middle">🎒</text>
+    <text x="392" y="662" font-size="20" text-anchor="middle">🎒</text>
+    ${guard(322, 666)}
     ${gate(248, 38, -14, "יציאת חירום")}
 
     <!-- compass -->
@@ -798,11 +937,16 @@ window.addEventListener("keyup", e => {
 });
 
 /* touch buttons */
-if ("ontouchstart" in window) document.body.classList.add("touch");
+const IS_TOUCH = (window.matchMedia && matchMedia("(pointer: coarse)").matches)
+  || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+if (IS_TOUCH) document.body.classList.add("touch");
+
 function bindTouch(id, key) {
   const el = $(id);
   el.addEventListener("pointerdown", e => {
     e.preventDefault();
+    unlockAudio();
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
     if (key === "jump" && !keys.jump) jumpPressed = true;
     if (key === "suck" && !keys.suck) suckPressed = true;
     keys[key] = true;
@@ -814,6 +958,33 @@ bindTouch("#tc-left", "left");
 bindTouch("#tc-right", "right");
 bindTouch("#tc-jump", "jump");
 bindTouch("#tc-suck", "suck");
+
+/* ---- iOS / Android adjustments ---- */
+/* WebAudio on iOS starts suspended — resume it on the first user gesture */
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch (e) {}
+}
+["pointerdown", "touchstart", "keydown"].forEach(ev =>
+  window.addEventListener(ev, unlockAudio, { once: false, passive: true }));
+
+/* block double-tap-to-zoom and pinch-zoom gestures (iOS Safari) */
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => {
+  const now = Date.now();
+  if (now - lastTouchEnd < 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+["gesturestart", "gesturechange", "gestureend"].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault()));
+
+/* suppress the long-press context menu / text selection on the play area */
+["#game-canvas", "#touch-bar"].forEach(sel => {
+  const el = $(sel);
+  if (el) el.addEventListener("contextmenu", e => e.preventDefault());
+});
 
 function startEngine(levelIdx) {
   const world = WORLDS[levelIdx];
@@ -1089,12 +1260,19 @@ function boardTilePos(i) {
 }
 
 function startBoard(world) {
+  /* the rival is a different character from the selected one */
+  const rivalIdx = (state.charIdx + 2) % CHARACTERS.length;
   game = {
     mode: "board", world,
-    time: 0, pos: 0, rolls: 0,
-    dice: null, diceAnim: 0,
+    time: 0,
+    players: [
+      { pos: 0, rolls: 0, name: "את/ה", sprite: getSprite("idle", "normal"), accent: "#3aa6d6" },
+      { pos: 0, rolls: 0, name: CHARACTERS[rivalIdx].name, sprite: buildSprite(rivalIdx, "idle", "normal"), accent: "#d35400" }
+    ],
+    turn: 0,                 // 0 = player, 1 = rival
+    dice: null, diceAnim: 0, waitT: 0,
     queue: [], stepT: 0, resolveOnLand: true,
-    msg: "לחצו על המסך או על רווח כדי להטיל קוביה!", msgT: 99,
+    msg: "תורכם! לחצו על המסך או על רווח כדי להטיל קוביה!", msgT: 99,
     parts: [], over: false, phase: "idle"
   };
   lastT = performance.now();
@@ -1102,28 +1280,53 @@ function startBoard(world) {
   rafId = requestAnimationFrame(loop);
 }
 
-function boardRoll() {
+function beginRoll() {
   const g = game;
-  if (!g || g.mode !== "board" || g.phase !== "idle" || g.over) return;
+  g.players[g.turn].rolls++;
+  g.dice = 1 + Math.floor(Math.random() * 6);
+  g.diceAnim = g.turn === 0 ? 0.7 : 0.55;
   g.phase = "dice";
-  g.diceAnim = 0.7;
-  g.rolls++;
   playSound("good");
 }
 
+function boardRoll() {
+  const g = game;
+  if (!g || g.mode !== "board" || g.phase !== "idle" || g.turn !== 0 || g.over) return;
+  beginRoll();
+}
+
+function endTurn() {
+  const g = game;
+  g.turn = 1 - g.turn;
+  if (g.turn === 0) {
+    g.phase = "idle";
+    if (g.msgT <= 0) { g.msg = "תורכם! הטילו קוביה 🎲"; g.msgT = 2; }
+  } else {
+    g.phase = "rivalWait";
+    g.waitT = 0.7;
+  }
+}
+
 function boardResolve() {
-  const g = game, p = g.pos;
+  const g = game, pl = g.players[g.turn], p = pl.pos;
+  const who = g.turn === 0 ? "אתם" : pl.name;
+
   if (p >= BOARD_N - 1) {
     g.over = true;
-    const stars = g.rolls <= 9 ? 3 : g.rolls <= 13 ? 2 : 1;
-    setTimeout(() => levelWon(stars,
-      `הגעתם למסיבת הסיום ב-${g.rolls} הטלות! שרדתם את שנת האזעקות עם נאצ'וס ביד 🌮`), 500);
+    if (g.turn === 0) {
+      const stars = g.players[0].rolls <= 9 ? 3 : g.players[0].rolls <= 13 ? 2 : 1;
+      setTimeout(() => levelWon(stars,
+        `ניצחתם את ${g.players[1].name} בדרך למסיבת הסיום! 🏁 שרדתם את שנת האזעקות עם נאצ'וס ביד 🌮`), 500);
+    } else {
+      setTimeout(() => levelLost(
+        `${pl.name} הגיעה למסיבת הסיום לפניכם! 😅 נסו שוב — אתם מהירים יותר!`), 500);
+    }
     return;
   }
   if (g.resolveOnLand && BOARD_ROCKETS[p]) {
     playSound("siren");
     const shelter = [...BOARD_SHELTERS].reverse().find(s => s < p) ?? 0;
-    g.msg = `${BOARD_ROCKETS[p]} אזעקה! חוזרים לממ"ד הקרוב! 🛡️`;
+    g.msg = `${BOARD_ROCKETS[p]} אזעקה! ${who} חוזר/ת לממ"ד הקרוב! 🛡️`;
     g.msgT = 3;
     g.queue = [];
     for (let i = p - 1; i >= shelter; i--) g.queue.push(i);
@@ -1134,16 +1337,16 @@ function boardResolve() {
   }
   if (g.resolveOnLand && BOARD_NACHOS.includes(p)) {
     playSound("good");
-    g.msg = "🌮 נאצ'וס! מתקדמים 3 צעדים!";
+    g.msg = `🌮 נאצ'וס! ${who} מתקדמ/ת 3 צעדים!`;
     g.msgT = 3;
     g.queue = [];
     for (let i = p + 1; i <= Math.min(p + 3, BOARD_N - 1); i++) g.queue.push(i);
     g.phase = "move"; g.stepT = .22;
     return;
   }
-  if (!g.resolveOnLand) { g.msg = "🛡️ בטוחים בממ\"ד! ממשיכים."; g.msgT = 3; }
+  if (!g.resolveOnLand) { g.msg = `🛡️ ${who} בטוח/ה בממ"ד! ממשיכים.`; g.msgT = 3; }
   g.resolveOnLand = true;
-  g.phase = "idle";
+  endTurn();
 }
 
 function updateBoard(dt) {
@@ -1154,12 +1357,17 @@ function updateBoard(dt) {
   if (jumpPressed) { jumpPressed = false; boardRoll(); }
   jumpPressed = false;
 
-  if (g.phase === "dice") {
+  const pl = g.players[g.turn];
+
+  if (g.phase === "rivalWait") {
+    g.waitT -= dt;
+    if (g.waitT <= 0) beginRoll();
+  } else if (g.phase === "dice") {
     g.diceAnim -= dt;
-    g.dice = 1 + Math.floor(Math.random() * 6);
-    if (g.diceAnim <= 0) {
+    if (g.diceAnim > 0.05) g.dice = 1 + Math.floor(Math.random() * 6); // spin
+    else {
       g.queue = [];
-      for (let i = g.pos + 1; i <= Math.min(g.pos + g.dice, BOARD_N - 1); i++) g.queue.push(i);
+      for (let i = pl.pos + 1; i <= Math.min(pl.pos + g.dice, BOARD_N - 1); i++) g.queue.push(i);
       g.resolveOnLand = true;
       g.phase = "move";
       g.stepT = .22;
@@ -1168,7 +1376,7 @@ function updateBoard(dt) {
     g.stepT -= dt;
     if (g.stepT <= 0) {
       if (g.queue.length) {
-        g.pos = g.queue.shift();
+        pl.pos = g.queue.shift();
         g.stepT = .22;
         playSound("puff");
       }
@@ -1218,15 +1426,29 @@ function drawBoard() {
     if (icon) ctx.fillText(icon, tx + 12, ty + 9);
   }
 
-  /* token: the heroine standing on her tile */
-  const [px2, py2] = boardTilePos(g.pos);
-  const hop = g.phase === "move" ? Math.abs(Math.sin(g.stepT / .22 * Math.PI)) * 10 : Math.sin(g.time * 3) * 2;
-  ctx.fillStyle = "rgba(0,0,0,.2)";
-  ctx.beginPath(); ctx.ellipse(px2 - 30, py2 + 20, 12, 4, 0, 0, 6.29); ctx.fill();
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(getSprite("idle", "normal"), px2 - 47, py2 - 33 - hop, 34, 52);
-  ctx.restore();
+  /* tokens: player (left of tile) and rival (right of tile) */
+  const drawToken = (pi, side) => {
+    const pl = g.players[pi];
+    const [tx, ty] = boardTilePos(pl.pos);
+    const active = g.turn === pi && (g.phase === "move" || g.phase === "dice");
+    const hop = active ? Math.abs(Math.sin(g.stepT / .22 * Math.PI)) * 10 : Math.sin(g.time * 3 + pi) * 2;
+    const ox = side * 17;
+    ctx.fillStyle = "rgba(0,0,0,.2)";
+    ctx.beginPath(); ctx.ellipse(tx + ox, ty + 22, 11, 4, 0, 0, 6.29); ctx.fill();
+    /* accent ring under the active player's token */
+    if (g.turn === pi && !g.over) {
+      ctx.strokeStyle = pl.accent; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(tx + ox, ty + 22, 14, 6, 0, 0, 6.29); ctx.stroke();
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(pl.sprite, tx + ox - 17, ty - 35 - hop, 34, 52);
+    ctx.restore();
+  };
+  /* draw the lower-tile token last so it overlaps cleanly */
+  const order = g.players[0].pos <= g.players[1].pos ? [1, 0] : [0, 1];
+  drawToken(order[0], order[0] === 0 ? -1 : 1);
+  drawToken(order[1], order[1] === 0 ? -1 : 1);
 
   /* particles */
   for (const pt of g.parts) {
@@ -1243,23 +1465,31 @@ function drawBoard() {
   ctx.font = "700 17px Rubik";
   ctx.fillStyle = "#fff";
   ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
-  ctx.textAlign = "left";
+  /* race standings on the right side (left side has the map button) */
+  ctx.textAlign = "right";
   ctx.direction = "ltr";
-  ctx.fillText(`🎲 ${g.rolls}`, 26, 39);
+  ctx.font = "700 15px Rubik";
+  ctx.fillStyle = g.turn === 0 ? "#7fe0ff" : "#fff";
+  ctx.fillText(`את/ה ${g.players[0].pos + 1}/${BOARD_N} 🔵`, W - 22, 33);
+  ctx.fillStyle = g.turn === 1 ? "#ffb877" : "#fff";
+  ctx.fillText(`${g.players[1].name} ${g.players[1].pos + 1}/${BOARD_N} 🟠`, W - 22, 49);
   ctx.direction = "inherit";
 
   /* dice */
   ctx.fillStyle = "#fff";
   roundRect(W - 78, H - 78, 58, 58, 12);
-  ctx.strokeStyle = "#caa977"; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(W - 78, H - 78, 58, 58, 12) : 0; ctx.stroke();
+  ctx.fillStyle = g.turn === 0 ? "#3aa6d6" : "#d35400";
+  roundRect(W - 78, H - 78, 58, 6, 12);
   ctx.fillStyle = "#2b2b45";
   ctx.font = "800 30px Rubik";
   ctx.textAlign = "center";
-  ctx.fillText(g.dice ?? "?", W - 49, H - 38);
+  ctx.fillText(g.dice ?? "?", W - 49, H - 36);
 
   /* message strip */
-  const msg = g.msgT > 0 ? g.msg : (g.phase === "idle" ? "לחצו על המסך או על רווח כדי להטיל קוביה! 🎲" : "");
+  const msg = g.msgT > 0 ? g.msg
+    : g.phase === "idle" ? "תורכם! לחצו על המסך או על רווח כדי להטיל קוביה! 🎲"
+    : g.turn === 1 ? `🟠 תור ${g.players[1].name}...`
+    : "";
   if (msg) {
     ctx.fillStyle = "rgba(13,16,38,.55)";
     roundRect(W / 2 - 240, H - 44, 480, 34, 12);
