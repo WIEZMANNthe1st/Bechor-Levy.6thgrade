@@ -131,6 +131,7 @@
   }
   #yard svg {
     width: 100%;
+    aspect-ratio: 1000 / 720;   /* keep the map's natural shape by default */
     height: auto;
     display: block;
     border-radius: 20px;
@@ -141,10 +142,10 @@
   .station:hover:not(.locked) { filter: brightness(1.07); }
   .station .glow { animation: stPulse 1.4s ease-in-out infinite; }
   @keyframes stPulse { 0%,100% { opacity: .15; } 50% { opacity: .55; } }
-  .map-char, .play-arrow {
+  /* bob only the inner group — animating transform on .map-char itself would
+     override its translate() and fling it to the SVG origin (top-left corner) */
+  .map-bob, .play-arrow {
     animation: charBob 1.2s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
   }
   @keyframes charBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
@@ -260,11 +261,16 @@
     body.touch #tc-suck { background: rgba(91,197,242,.5); }
     #quit-btn { font-size: .75rem; padding: 6px 11px; }
 
-    /* map: hide the title and grow the campus to fill the screen */
-    #screen-map { padding: 2px; justify-content: center; }
+    /* map: hide the title and stretch the campus to fill the whole screen */
+    #screen-map { padding: 0; justify-content: center; }
     .map-title { display: none; }
-    #yard { margin-top: 0; max-width: none; }
-    #yard svg { width: min(100%, (100dvh - 6px) * 1000 / 720); margin: 0 auto; }
+    #yard { margin: 0; max-width: none; height: 100dvh; }
+    #yard svg {
+      width: 100%;
+      height: 100dvh;
+      aspect-ratio: auto;        /* allow stretching to fill the screen */
+      border-radius: 0;
+    }
   }
 
   /* feedback + overlay */
@@ -528,7 +534,7 @@ function charSvg(x, y) {
   return `
   <g class="map-char" transform="translate(${x},${y})">
     <ellipse cx="0" cy="38" rx="15" ry="4.5" fill="rgba(0,0,0,.25)"/>
-    <image href="${url}" x="-26" y="-42" width="52" height="80" style="image-rendering:pixelated"/>
+    <g class="map-bob"><image href="${url}" x="-26" y="-42" width="52" height="80" style="image-rendering:pixelated"/></g>
   </g>`;
 }
 
@@ -656,7 +662,7 @@ function renderMap() {
     </g>`;
 
   $("#yard").innerHTML = `
-  <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 1000 720" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="1000" height="720" fill="#e9e7dd"/>
     <!-- campus boundary -->
     <polygon points="35,150 220,45 640,22 965,135 975,560 835,700 210,705 25,520"
