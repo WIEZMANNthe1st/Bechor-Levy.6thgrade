@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="שורדים את היסודי">
 <title>שורדים את היסודי — בית הספר בכור לוי</title>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg1: #1a1c3a;
@@ -31,14 +31,30 @@
     overflow-x: hidden;
     overscroll-behavior: none;
     -webkit-text-size-adjust: 100%;
+    position: relative;
+  }
+  /* soft ambient glows behind every screen */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(255,255,255,.08), transparent 38%),
+      radial-gradient(circle at 86% 12%, rgba(255,217,61,.10), transparent 35%),
+      radial-gradient(circle at 55% 95%, rgba(91,197,242,.14), transparent 45%);
   }
   .screen {
+    position: relative;
+    z-index: 1;
     display: none;
     min-height: 100vh;
     min-height: 100dvh;
     padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
-  .screen.active { display: flex; flex-direction: column; align-items: center; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; animation: screenIn .35s ease; }
+  @keyframes screenIn { from { opacity: 0; transform: scale(.985) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
   .panel {
     background: var(--card);
@@ -50,8 +66,67 @@
     text-align: center;
   }
   h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
-  h2 { font-size: 1.5rem; font-weight: 800; }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: .5px;
+    -webkit-text-stroke: 1.5px currentColor;
+    text-stroke: 1.5px currentColor;
+    text-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
   .sub { color: #666; margin-bottom: 18px; line-height: 1.6; }
+
+  /* hero header on the start screen */
+  .hero { margin-bottom: 4px; }
+  .hero-badge {
+    width: 104px; height: 104px;
+    margin: 0 auto 8px;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.25));
+  }
+  .hero-badge svg { width: 100%; height: 100%; display: block; }
+  .hero h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: var(--accent2);
+    -webkit-text-stroke: 2.5px var(--ink);
+    text-stroke: 2.5px var(--ink);
+    text-shadow: 0 4px 0 #b53a58, 0 7px 14px rgba(0,0,0,.25);
+    margin-bottom: 10px;
+    line-height: 1.25;
+  }
+  .hero-sub {
+    display: inline-block;
+    font-size: .78rem;
+    font-weight: 800;
+    color: #6f6c93;
+    background: #f0eefc;
+    border-radius: 999px;
+    padding: 4px 14px;
+    margin-top: 2px;
+    letter-spacing: .3px;
+  }
+
+  /* section dividers inside panels */
+  .section-label {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 18px 0 10px;
+  }
+  .section-label span {
+    font-weight: 900;
+    font-size: .85rem;
+    letter-spacing: .5px;
+    color: var(--ink);
+    background: linear-gradient(180deg, #fff7dd, #ffe9a8);
+    border: 2px solid #f0d28a;
+    border-radius: 999px;
+    padding: 4px 16px;
+    box-shadow: 0 2px 0 rgba(0,0,0,.06);
+  }
+  .section-label::before, .section-label::after {
+    content: ""; flex: 1; height: 2px;
+    background: linear-gradient(90deg, transparent, #e7e7f2, transparent);
+  }
 
   .btn {
     font-family: inherit;
@@ -80,40 +155,88 @@
     width: 80%;
     margin: 14px 0 20px;
     outline: none;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  input[type=text]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(255,107,139,.18);
   }
 
-  .controls-hint {
+  /* controls legend */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .ctrl-chip {
     background: #f0f6ff;
     border-radius: 14px;
-    padding: 12px;
-    margin: 12px 0;
-    font-size: .95rem;
-    line-height: 1.9;
-    text-align: right;
+    padding: 10px 6px;
+    text-align: center;
   }
+  .ctrl-keys { margin-bottom: 4px; line-height: 1; }
+  .ctrl-keys kbd { margin: 0 1px; }
+  .ctrl-label { font-size: .82rem; font-weight: 800; letter-spacing: .2px; color: #51537a; }
+  .ctrl-note { text-align: center; font-size: .8rem; color: #999; margin-top: 8px; }
 
   /* character select */
   .char-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
     margin: 10px 0 4px;
   }
   .char-opt {
+    position: relative;
+    overflow: hidden;
     background: #f6f7ff;
     border: 3px solid #e3e6ff;
-    border-radius: 14px;
-    padding: 8px 4px 6px;
+    border-radius: 16px;
+    padding: 12px 6px 10px;
     cursor: pointer;
     font-family: inherit;
-    font-weight: 700;
-    font-size: .85rem;
+    font-weight: 800;
+    font-size: .9rem;
+    letter-spacing: .2px;
     color: var(--ink);
-    transition: transform .1s;
+    transition: transform .15s, box-shadow .15s;
   }
-  .char-opt:hover { transform: scale(1.05); }
-  .char-opt img { width: 52px; height: 80px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
-  .char-opt.selected { border-color: var(--accent); background: #fff0f4; box-shadow: 0 0 0 3px rgba(255,107,139,.25); }
+  .char-opt::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 28%, rgba(91,197,242,.16), transparent 65%);
+  }
+  .char-opt:nth-child(1)::before { background: radial-gradient(circle at 50% 28%, rgba(255,107,139,.16), transparent 65%); }
+  .char-opt:nth-child(3)::before { background: radial-gradient(circle at 50% 28%, rgba(78,203,113,.16), transparent 65%); }
+  .char-opt:nth-child(4)::before { background: radial-gradient(circle at 50% 28%, rgba(255,217,61,.20), transparent 65%); }
+  .char-opt:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+  .char-opt img { width: 64px; height: 98px; image-rendering: pixelated; display: block; margin: 0 auto 6px; position: relative; }
+  .char-opt .char-name { position: relative; }
+  .char-opt.selected {
+    border-color: var(--accent2);
+    background: #fffaf0;
+    box-shadow: 0 0 0 4px rgba(255,217,61,.3), 0 6px 16px rgba(0,0,0,.12);
+  }
+  .char-opt.selected::after {
+    content: "✓";
+    position: absolute; top: 6px; left: 6px;
+    width: 22px; height: 22px;
+    background: var(--good);
+    color: #fff; font-weight: 800; font-size: .8rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,.25);
+  }
+  .version-tag {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: .75rem;
+    color: #aaa;
+    background: #f6f6fb;
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+  #start-panel { margin-top: 4vh; }
   kbd {
     background: #2b2b45; color: #fff;
     border-radius: 6px; padding: 2px 9px;
@@ -141,7 +264,9 @@
   .station.locked { cursor: default; filter: grayscale(1) opacity(.55); }
   .station:hover:not(.locked) { filter: brightness(1.07); }
   .station .glow { animation: stPulse 1.4s ease-in-out infinite; }
-  @keyframes stPulse { 0%,100% { opacity: .15; } 50% { opacity: .55; } }
+  @keyframes stPulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+  .station .glow-ring { animation: ringPulse 1.6s ease-in-out infinite; }
+  @keyframes ringPulse { 0%,100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.18); opacity: 0; } }
   /* bob only the inner group — animating transform on .map-char itself would
      override its translate() and fling it to the SVG origin (top-left corner) */
   .map-bob, .play-arrow {
@@ -283,16 +408,64 @@
   .overlay .panel { animation: pop .3s; max-height: 92vh; overflow-y: auto; }
   @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .big-emoji { font-size: 3.6rem; margin-bottom: 8px; }
+  .story-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 14px 0 18px;
+  }
+  .story-portrait { flex: 0 0 auto; text-align: center; }
+  .story-portrait img {
+    width: 48px; height: 74px;
+    image-rendering: pixelated;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.25));
+  }
+  .story-name {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 800;
+    color: #8a6a2a;
+    background: #fff3cf;
+    border: 1px solid #ffe28a;
+    border-radius: 999px;
+    padding: 1px 9px;
+    margin-top: 4px;
+  }
   .story {
+    position: relative;
+    flex: 1;
     background: #fff8e1;
-    border-right: 6px solid var(--accent2);
-    border-radius: 12px;
+    border: 2px solid #ffe9a8;
+    border-radius: 16px;
     padding: 14px 16px;
     text-align: right;
     line-height: 1.7;
-    margin: 14px 0 18px;
   }
-  .goal { font-weight: 800; color: #d35400; margin-bottom: 14px; }
+  .story::after {
+    content: "";
+    position: absolute;
+    top: 20px;
+    right: -9px;
+    width: 16px; height: 16px;
+    background: #fff8e1;
+    border-top: 2px solid #ffe9a8;
+    border-right: 2px solid #ffe9a8;
+    transform: rotate(45deg);
+  }
+  .story.no-tail::after { display: none; }
+  .goal {
+    display: inline-block;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: #d35400;
+    background: #fff1e3;
+    border: 2px solid #ffd9b8;
+    border-radius: 14px;
+    padding: 8px 14px;
+    margin-bottom: 14px;
+  }
 
   /* diploma */
   #diploma {
@@ -304,8 +477,21 @@
     text-align: center;
     box-shadow: 0 12px 40px rgba(0,0,0,.4);
   }
-  #diploma h1 { color: #b08a1e; }
-  #diploma .name { font-size: 2rem; font-weight: 800; margin: 10px 0; color: var(--ink); }
+  #diploma h1 {
+    color: #b08a1e;
+    font-weight: 900;
+    letter-spacing: 1px;
+    -webkit-text-stroke: 1.5px #7a5a14;
+    text-stroke: 1.5px #7a5a14;
+    text-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
+  #diploma .name {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: .5px;
+    margin: 10px 0;
+    color: var(--accent);
+  }
   #diploma p { line-height: 1.8; }
   #diploma .seal { font-size: 3rem; margin-top: 10px; }
 
@@ -316,9 +502,39 @@
   }
   @keyframes confFall { to { transform: translateY(110vh) rotate(720deg); } }
 
+  /* compact the start screen so it fits a phone viewport without scrolling */
+  @media (max-width: 600px) {
+    #screen-start { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); justify-content: center; }
+    #start-panel { margin-top: 0; padding: 14px 16px; border-radius: 18px; }
+    .hero { margin-bottom: 0; }
+    .hero-badge { width: 64px; height: 64px; margin: 0 auto 4px; }
+    .hero h1 {
+      font-size: 1.5rem;
+      -webkit-text-stroke-width: 1.5px;
+      text-stroke-width: 1.5px;
+      text-shadow: 0 2px 0 #b53a58, 0 4px 8px rgba(0,0,0,.2);
+      margin-bottom: 4px;
+    }
+    .hero-sub { font-size: .65rem; padding: 2px 10px; }
+    #screen-start .sub { display: none; }
+    .section-label { margin: 6px 0 5px; }
+    .section-label span { font-size: .65rem; padding: 2px 10px; }
+    .controls-grid { gap: 5px; }
+    .ctrl-chip { padding: 5px 4px; }
+    .ctrl-keys kbd { padding: 1px 6px; font-size: .68em; }
+    .ctrl-label { font-size: .62rem; }
+    .ctrl-note { display: none; }
+    .char-grid { gap: 6px; margin: 6px 0 2px; }
+    .char-opt { padding: 6px 4px 4px; font-size: .7rem; border-radius: 12px; }
+    .char-opt img { width: 38px; height: 58px; margin-bottom: 2px; }
+    .char-opt.selected::after { width: 18px; height: 18px; font-size: .65rem; }
+    #screen-start input[type=text] { padding: 8px; font-size: .9rem; margin: 8px 0 10px; }
+    #screen-start .btn { padding: 10px 26px; font-size: .95rem; }
+    .version-tag { margin-top: 6px; font-size: .62rem; padding: 2px 8px; }
+  }
+
   @media (max-width: 480px) {
     h1 { font-size: 1.5rem; }
-    .map-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
@@ -326,27 +542,90 @@
 
 <!-- START -->
 <section class="screen active" id="screen-start">
-  <div class="panel" style="margin-top:4vh">
-    <div class="big-emoji">🎒🏫</div>
-    <h1>שורדים את היסודי</h1>
-    <p class="sub">
+  <div class="panel" id="start-panel">
+    <div class="hero">
+      <div class="hero-badge">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g transform="translate(50,50)">
+            <ellipse cx="0" cy="3" rx="42" ry="42" fill="rgba(0,0,0,.18)"/>
+            <circle r="40" fill="#c3e6f7" stroke="#fff" stroke-width="3"/>
+            <circle r="40" fill="none" stroke="#5f93b8" stroke-width="1.5"/>
+            <!-- sun -->
+            <g stroke="#f3c12f" stroke-width="2" stroke-linecap="round">
+              <line x1="-13.0" y1="-19.0" x2="-9.0" y2="-19.0"/>
+              <line x1="-15.1" y1="-14.1" x2="-12.2" y2="-11.2"/>
+              <line x1="-20.0" y1="-12.0" x2="-20.0" y2="-8.0"/>
+              <line x1="-24.9" y1="-14.1" x2="-27.8" y2="-11.2"/>
+              <line x1="-27.0" y1="-19.0" x2="-31.0" y2="-19.0"/>
+              <line x1="-24.9" y1="-23.9" x2="-27.8" y2="-26.8"/>
+              <line x1="-20.0" y1="-26.0" x2="-20.0" y2="-30.0"/>
+              <line x1="-15.1" y1="-23.9" x2="-12.2" y2="-26.8"/>
+            </g>
+            <circle cx="-20" cy="-19" r="6.5" fill="#f3c12f"/>
+            <!-- tree -->
+            <rect x="0" y="-13" width="3" height="9" fill="#8a5a33"/>
+            <circle cx="2" cy="-19" r="9" fill="#57a94e"/>
+            <circle cx="-1" cy="-22" r="4.5" fill="#6fc164"/>
+            <!-- standing books -->
+            <g transform="rotate(6 20 -14)">
+              <rect x="13" y="-23" width="4" height="15" rx="1" fill="#c0504d"/>
+              <rect x="17" y="-25" width="4" height="17" rx="1" fill="#4f81bd"/>
+              <rect x="21" y="-22" width="4" height="14" rx="1" fill="#9bbb59"/>
+            </g>
+            <!-- open book -->
+            <path d="M0,9 L-15,12 L-15,21 L0,18 Z" fill="#ffffff" stroke="#c9b79a" stroke-width="1"/>
+            <path d="M0,9 L15,12 L15,21 L0,18 Z" fill="#f1ece1" stroke="#c9b79a" stroke-width="1"/>
+            <line x1="-12" y1="13.5" x2="-3" y2="12" stroke="#bcae96" stroke-width="1"/>
+            <line x1="-12" y1="16.5" x2="-3" y2="15" stroke="#bcae96" stroke-width="1"/>
+            <line x1="3" y1="12" x2="12" y2="13.5" stroke="#bcae96" stroke-width="1"/>
+            <line x1="3" y1="15" x2="12" y2="16.5" stroke="#bcae96" stroke-width="1"/>
+            <!-- music note -->
+            <g transform="translate(-21,11)">
+              <ellipse cx="-2" cy="4" rx="3.5" ry="2.6" fill="#2b2b45" transform="rotate(-20 -2 4)"/>
+              <rect x="1" y="-6" width="1.6" height="10" fill="#2b2b45"/>
+              <path d="M2.6,-6 q5,1 4,6" fill="none" stroke="#2b2b45" stroke-width="1.6"/>
+            </g>
+            <!-- name -->
+            <text y="33" font-size="9.5" font-weight="800" text-anchor="middle" fill="#234a63" font-family="Rubik">בכור לוי</text>
+          </g>
+        </svg>
+      </div>
+      <h1>שורדים את היסודי</h1>
+      <div class="hero-sub">🏫 בית הספר בכור לוי · מחזור ו'</div>
+    </div>
+    <p class="sub" style="margin-top:12px">
       הרפתקת פלטפורמה אמיתית של מחזור ו' בבית הספר <b>בכור לוי</b><br>
       רוצו, קפצו, רחפו ושאפו אויבים — דרך שש שנים מטורפות,<br>
       <b>מכיתה א' ועד קרב הבוס של החטיבה!</b>
     </p>
-    <div class="controls-hint">
-      🎮 <b>איך משחקים:</b><br>
-      <kbd>→</kbd><kbd>←</kbd> לרוץ &nbsp;|&nbsp; <kbd>רווח</kbd> לקפוץ<br>
-      באוויר? לחצו <kbd>רווח</kbd> שוב ושוב כדי <b>לרחף עם בלון</b> 🎈<br>
-      <kbd>X</kbd> <b>לשאוף אויב</b> 🌀 ואז <kbd>X</kbd> שוב <b>לירות כוכב!</b> ⭐<br>
-      📱 בנייד — כפתורי מגע על המסך
+
+    <div class="section-label"><span>🎮 איך משחקים</span></div>
+    <div class="controls-grid">
+      <div class="ctrl-chip">
+        <div class="ctrl-keys"><kbd>→</kbd><kbd>←</kbd></div>
+        <div class="ctrl-label">ריצה</div>
+      </div>
+      <div class="ctrl-chip">
+        <div class="ctrl-keys"><kbd>רווח</kbd></div>
+        <div class="ctrl-label">קפיצה</div>
+      </div>
+      <div class="ctrl-chip">
+        <div class="ctrl-keys"><kbd>רווח</kbd><kbd>רווח</kbd></div>
+        <div class="ctrl-label">ריחוף עם בלון 🎈</div>
+      </div>
+      <div class="ctrl-chip">
+        <div class="ctrl-keys"><kbd>X</kbd><kbd>X</kbd></div>
+        <div class="ctrl-label">שאיפה 🌀 וירייה ⭐</div>
+      </div>
     </div>
-    <div style="font-weight:800;margin-top:4px">בחרו דמות:</div>
+    <div class="ctrl-note">📱 בנייד — כפתורי מגע על המסך</div>
+
+    <div class="section-label"><span>בחרו דמות</span></div>
     <div class="char-grid" id="char-grid"></div>
     <input type="text" id="player-name" maxlength="20" placeholder="איך קוראים לך?">
     <br>
     <button class="btn" onclick="startGame()">מתחילים את כיתה א'! 🚀</button>
-    <div style="margin-top:14px;font-size:.8rem;color:#aaa">גרסה 7 · 13.6</div>
+    <div class="version-tag">גרסה 7 · 13.6</div>
   </div>
 </section>
 
@@ -446,32 +725,38 @@ const LEVELS = [
   {
     grade: "כיתה א'", emoji: "😷", name: "שלום כיתה א' (גרסת המגיפה)",
     story: `הגעתם נרגשים מהגן וחיכיתם לחונכים מכיתה ו'... אבל היקום אמר: "קורונה!" את פניכם קיבלה המחנכת טלי — זיהיתם אותה רק לפי העיניים. למדתם בזום, חגגתם ימי הולדת בזום, ובין לבין למדתם קרוא וכתוב.`,
-    goal: "אספו 8 מסכות 😷 בדרך לבית הספר, היזהרו מהוירוסים 🦠 — ואפשר לשאוף אותם ולירות כוכבים!"
+    goal: "אספו 8 מסכות 😷 בדרך לבית הספר, היזהרו מהוירוסים 🦠 — ואפשר לשאוף אותם ולירות כוכבים!",
+    teacher: 3
   },
   {
     grade: "כיתה ב'", emoji: "🏄", name: "גולשים מהסגר",
     story: `עדיין קורונה, עדיין טלי! תו ירוק, דלתא ואומיקרון. ובסגר אסור להתרחק מהבית יותר מ-100 מטר... אבל הגלים קוראים! יצאתם לגלוש בים — ועכשיו סירת המשטרה בדרך אליכם.`,
-    goal: "גלשו אל החוף! קפצו עם רווח 🏄 מעל סלעים, מצופים וכרישים — כל פגיעה מאטה אתכם והשוטרים מתקרבים! 🚤👮"
+    goal: "גלשו אל החוף! קפצו עם רווח 🏄 מעל סלעים, מצופים וכרישים — כל פגיעה מאטה אתכם והשוטרים מתקרבים! 🚤👮",
+    teacher: 3
   },
   {
     grade: "כיתה ג'", emoji: "🚌", name: "שפיות זמנית",
     story: `מחנכת חדשה — מדו! צעירה, כמעט כמוכם, והבינה אתכם בול. סוף־סוף שנה מלאה ונורמלית: טיול שנתי, חווה חקלאית, פורימון, ליל הסדר ומסיבת סיום שהפקתם לבד!`,
-    goal: "שנה נורמלית! אספו את 6 חוויות השנה: 🚌 🐄 🤡 🍷 🔥 🎉 — רק תיזהרו מהדבורים של החווה 🐝"
+    goal: "שנה נורמלית! אספו את 6 חוויות השנה: 🚌 🐄 🤡 🍷 🔥 🎉 — רק תיזהרו מהדבורים של החווה 🐝",
+    teacher: 2
   },
   {
     grade: "כיתה ד'", emoji: "🚨", name: "סולמות, טילים וממ\"דים",
     story: `התחלתם נורמלי, וחודש אחרי הגיע השביעי באוקטובר. הלו"ז החדש: אזעקות, ממ"דים ומקלטים — אבל גם יום הנאצ'וס הבינלאומי שמדו ארגנה, ומשחקי קופסה. המון משחקי קופסה.`,
-    goal: "משחק לוח! הטילו קוביה 🎲 והגיעו למסיבת הסיום. דרכתם על טיל 🚀 או אזעקה 🚨? חוזרים אחורה לממ\"ד הקרוב 🛡️! נאצ'וס 🌮 = מתקדמים 3 צעדים!"
+    goal: "משחק לוח! הטילו קוביה 🎲 והגיעו למסיבת הסיום. דרכתם על טיל 🚀 או אזעקה 🚨? חוזרים אחורה לממ\"ד הקרוב 🛡️! נאצ'וס 🌮 = מתקדמים 3 צעדים!",
+    teacher: 2
   },
   {
     grade: "כיתה ה'", emoji: "🎬", name: "כוכבי קולנוע וטילים מאיראן",
     story: `קיבלתם את אורית כמחנכת. למדתם שחייה, יצרתם סרט בשם "לשלוף מהכובע" עם 200,000 צפיות ביוטיוב! ואז ביוני — מתקפה מאיראן ו־12 יום במקלטים.`,
-    goal: "אספו 8 סרטי קולנוע 🎬 להפקה הגדולה — בין טילים 🚀 לעב\"מים 🛸. אתם כבר מקצוענים!"
+    goal: "אספו 8 סרטי קולנוע 🎬 להפקה הגדולה — בין טילים 🚀 לעב\"מים 🛸. אתם כבר מקצוענים!",
+    teacher: 1
   },
   {
     grade: "כיתה ו'", emoji: "👑", name: "הבוס הגדול: מפלצת החטיבה",
     story: `סוף־סוף הכי גדולים בבית הספר! חנכתם את כיתות א', זכיתם במקום ראשון באולימפיאדת החלל... ועכשיו, בשער בית הספר, מחכה לכם המכשול האחרון: מפלצת החטיבה!`,
-    goal: "קרב בוס! 👾 געו בספרי החטיבה המעופפים 📚 כדי לאסוף אותם, ואז לחצו X (או 🌀) כדי לירות אותם על המפלצת! 6 פגיעות והיא נופלת!"
+    goal: "קרב בוס! 👾 געו בספרי החטיבה המעופפים 📚 כדי לאסוף אותם, ואז לחצו X (או 🌀) כדי לירות אותם על המפלצת! 6 פגיעות והיא נופלת!",
+    teacher: null
   }
 ];
 
@@ -506,7 +791,9 @@ function stationSvg(i, lv) {
   const cls = "station" + (locked ? " locked" : "") + (current ? " current" : "");
   return `
   <g class="${cls}" data-station="${i}" transform="translate(${x},${y})">
-    ${current ? `<ellipse class="glow" cx="0" cy="0" rx="100" ry="76" fill="#ffd93d"/>` : ""}
+    ${current ? `
+    <ellipse class="glow" cx="0" cy="0" rx="120" ry="92" fill="url(#stationGlow)"/>
+    <ellipse class="glow-ring" cx="0" cy="0" rx="80" ry="60" fill="none" stroke="#ffd93d" stroke-width="3"/>` : ""}
     <ellipse cx="0" cy="54" rx="26" ry="13" fill="#e3ddcf"/>
     <rect x="-52" y="-34" width="116" height="84" rx="9" fill="rgba(0,0,0,.14)"/>
     <rect x="-58" y="-42" width="116" height="84" rx="9" fill="${MAP_COLORS[i]}" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
@@ -522,9 +809,9 @@ function stationSvg(i, lv) {
     <rect x="-52" y="-80" width="104" height="27" rx="9" fill="#fff" stroke="#b3ab9b" stroke-width="1.5"/>
     <text x="-7" y="-60" font-size="16" font-weight="800" text-anchor="middle" fill="#2b2b45" font-family="Rubik">${lv.grade}</text>
     <text x="36" y="-60" font-size="15" text-anchor="middle">${locked ? "" : lv.emoji}</text>
-    ${done ? `<g><circle cx="52" cy="-50" r="13" fill="#4ecb71" stroke="#fff" stroke-width="2"/><text x="52" y="-44" font-size="15" text-anchor="middle" fill="#fff" font-weight="800">✓</text></g>` : ""}
+    ${done ? `<g><circle cx="52" cy="-50" r="13" fill="#4ecb71" stroke="#fff" stroke-width="2"/><text x="52" y="-44" font-size="15" text-anchor="middle" fill="#fff" font-weight="800">✓</text><text class="map-bob" x="68" y="-66" font-size="14">✨</text></g>` : ""}
     <text x="0" y="62" font-size="15" text-anchor="middle">${"⭐".repeat(state.stars[i])}</text>
-    ${current ? `<g class="play-arrow"><rect x="-40" y="-114" width="80" height="26" rx="13" fill="#d35400"/><text x="0" y="-95" font-size="15" font-weight="800" text-anchor="middle" fill="#fff" font-family="Rubik">לשחק! ⬇</text></g>` : ""}
+    ${current ? `<g class="play-arrow"><rect x="-40" y="-114" width="80" height="26" rx="13" fill="#d35400"/><text x="0" y="-95" font-size="15" font-weight="800" text-anchor="middle" fill="#fff" font-family="Rubik" stroke="#8a2e0a" stroke-width="3" stroke-linejoin="round" paint-order="stroke fill">לשחק! ⬇</text></g>` : ""}
   </g>`;
 }
 
@@ -663,6 +950,13 @@ function renderMap() {
 
   $("#yard").innerHTML = `
   <svg viewBox="0 0 1000 720" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="stationGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff3b0" stop-opacity=".9"/>
+        <stop offset="55%" stop-color="#ffd93d" stop-opacity=".45"/>
+        <stop offset="100%" stop-color="#ffd93d" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
     <rect width="1000" height="720" fill="#e9e7dd"/>
     <!-- campus boundary -->
     <polygon points="35,150 220,45 640,22 965,135 975,560 835,700 210,705 25,520"
@@ -865,10 +1159,18 @@ function mapNpcLoop(now) {
 function openLevel(i) {
   state.current = i;
   const lv = LEVELS[i];
+  const portrait = lv.teacher != null ? `
+    <div class="story-portrait">
+      <img src="${buildSprite(lv.teacher, "idle", "normal").toDataURL()}" alt="">
+      <div class="story-name">${CHARACTERS[lv.teacher].name}</div>
+    </div>` : "";
   showOverlay(`
     <div class="big-emoji">${lv.emoji}</div>
     <h2>${lv.grade}: ${lv.name}</h2>
-    <div class="story">${lv.story}</div>
+    <div class="story-wrap">
+      ${portrait}
+      <div class="story${lv.teacher == null ? " no-tail" : ""}">${lv.story}</div>
+    </div>
     <div class="goal">🎯 ${lv.goal}</div>
     <button class="btn" onclick="launchLevel()">יאללה, מתחילים!</button>
   `);
@@ -1379,27 +1681,69 @@ function drawSurf() {
   }
 
   /* HUD */
-  ctx.fillStyle = "rgba(13,16,38,.5)";
-  roundRect(10, 8, W - 20, 46, 14);
+  ctx.fillStyle = "rgba(13,16,38,.62)";
+  roundRect(10, 8, W - 20, 50, 15);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.stroke();
+
+  /* progress badge (left) */
+  ctx.beginPath();
+  ctx.arc(35, 33, 19, 0, 6.29);
+  ctx.fillStyle = "rgba(255,255,255,.22)";
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(255,255,255,.45)";
+  ctx.stroke();
+  ctx.font = "24px serif";
   ctx.textAlign = "center";
-  ctx.font = "700 17px Rubik";
+  ctx.fillText("🏖️", 35, 42);
+
+  ctx.font = "800 22px Rubik";
   ctx.fillStyle = "#fff";
-  ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
-  /* progress to the beach */
   ctx.textAlign = "left";
   ctx.direction = "ltr";
-  ctx.fillText(`🏖️ ${Math.min(100, Math.floor(g.dist))}%`, 26, 39);
+  ctx.fillText(`${Math.min(100, Math.floor(g.dist))}%`, 64, 41);
   ctx.direction = "inherit";
-  /* police distance meter */
-  const meterW = 130, mx = W - 160;
-  ctx.fillStyle = "rgba(255,255,255,.3)";
-  roundRect(mx, 22, meterW, 14, 7);
+
+  /* progress strip along the bottom of the bar */
+  const distFrac = Math.min(1, g.dist / 100);
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  roundRect(24, 51, W - 48, 6, 3);
+  ctx.fillStyle = "#ffd93d";
+  roundRect(24, 51, (W - 48) * distFrac, 6, 3);
+
+  /* level name (center) */
+  ctx.textAlign = "center";
+  ctx.font = "700 17px Rubik";
+  ctx.fillStyle = "rgba(255,255,255,.95)";
+  ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
+
+  /* police distance meter (right) — segmented, glows red when the boat is close */
   const frac = Math.max(0, (g.gap - 55) / (290 - 55));
-  ctx.fillStyle = frac < .3 ? "#ff5e5e" : frac < .6 ? "#ffd93d" : "#4ecb71";
-  roundRect(mx, 22, Math.max(10, meterW * frac), 14, 7);
-  ctx.font = "16px serif";
+  const segGap = 4, segN = 5, mw = 130, mx = W - 160, my = 19, mh = 20;
+  const segW = (mw - segGap * (segN - 1)) / segN;
+  const filledSegs = Math.round(frac * segN);
+  ctx.fillStyle = "rgba(255,255,255,.35)";
+  roundRect(mx - 4, my - 4, mw + 8, mh + 8, 14);
+  for (let i = 0; i < segN; i++) {
+    const sx = mx + i * (segW + segGap);
+    ctx.fillStyle = i < filledSegs
+      ? (frac < .3 ? "#ff5e5e" : frac < .6 ? "#ffd93d" : "#4ecb71")
+      : "rgba(255,255,255,.22)";
+    roundRect(sx, my, segW, mh, 6);
+  }
+  if (frac < .3) {
+    const pulse = .35 + .35 * Math.sin(g.time * 8);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(232,37,44,${pulse})`;
+    strokeRoundRect(mx - 4, my - 4, mw + 8, mh + 8, 14);
+  }
+  ctx.font = "22px serif";
   ctx.textAlign = "right";
   ctx.fillText("🚤", W - 24, 38);
+
+  drawVignette();
 }
 
 /* ================================================================
@@ -1616,27 +1960,60 @@ function drawBoard() {
   }
 
   /* HUD */
-  ctx.fillStyle = "rgba(13,16,38,.5)";
-  roundRect(10, 8, W - 20, 46, 14);
+  ctx.fillStyle = "rgba(13,16,38,.62)";
+  roundRect(10, 8, W - 20, 50, 15);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.stroke();
   ctx.textAlign = "center";
   ctx.font = "700 17px Rubik";
   ctx.fillStyle = "#fff";
   ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
-  /* race standings on the right side (left side has the map button) */
-  ctx.textAlign = "right";
-  ctx.direction = "ltr";
-  ctx.font = "700 15px Rubik";
-  ctx.fillStyle = g.turn === 0 ? "#7fe0ff" : "#fff";
-  ctx.fillText(`את/ה ${g.players[0].pos + 1}/${BOARD_N} 🔵`, W - 22, 33);
-  ctx.fillStyle = g.turn === 1 ? "#ffb877" : "#fff";
-  ctx.fillText(`${g.players[1].name} ${g.players[1].pos + 1}/${BOARD_N} 🟠`, W - 22, 49);
-  ctx.direction = "inherit";
 
-  /* dice */
+  /* race progress track on the right side (left side has the map button) */
+  const trackX = W - 300, trackW = 270, trackY = 33;
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  roundRect(trackX, trackY - 4, trackW, 8, 4);
+  ctx.font = "18px serif";
+  ctx.textAlign = "center";
+  ctx.fillText("🏫", trackX - 9, trackY + 6);
+  ctx.fillText("🎉", trackX + trackW + 9, trackY + 6);
+  const tokenY = [trackY - 10, trackY + 10];
+  for (let pi = 0; pi < 2; pi++) {
+    const pl = g.players[pi];
+    const tx2 = trackX + trackW * (pl.pos / (BOARD_N - 1));
+    const ty2 = tokenY[pi];
+    if (g.turn === pi && !g.over) {
+      const pulse = .4 + .3 * Math.sin(g.time * 6);
+      ctx.beginPath(); ctx.arc(tx2, ty2, 11, 0, 6.29);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = `rgba(255,217,61,${pulse})`;
+      ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(tx2, ty2, 8, 0, 6.29);
+    ctx.fillStyle = pl.accent;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(255,255,255,.8)";
+    ctx.stroke();
+  }
+
+  /* dice — glows to prompt the player's roll */
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.25)";
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
   ctx.fillStyle = "#fff";
   roundRect(W - 78, H - 78, 58, 58, 12);
+  ctx.restore();
   ctx.fillStyle = g.turn === 0 ? "#3aa6d6" : "#d35400";
   roundRect(W - 78, H - 78, 58, 6, 12);
+  if (g.turn === 0 && g.phase === "idle" && !g.over) {
+    const pulse = .35 + .35 * Math.sin(g.time * 6);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(255,217,61,${pulse})`;
+    strokeRoundRect(W - 80, H - 80, 62, 62, 13);
+  }
   ctx.fillStyle = "#2b2b45";
   ctx.font = "800 30px Rubik";
   ctx.textAlign = "center";
@@ -1650,10 +2027,16 @@ function drawBoard() {
   if (msg) {
     ctx.fillStyle = "rgba(13,16,38,.55)";
     roundRect(W / 2 - 240, H - 44, 480, 34, 12);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.stroke();
     ctx.fillStyle = "#fff";
     ctx.font = "700 16px Rubik";
+    ctx.textAlign = "center";
     ctx.fillText(msg, W / 2, H - 21);
   }
+
+  drawVignette();
 }
 
 /* tap anywhere on the canvas rolls the dice in the board game */
@@ -1929,6 +2312,7 @@ function spawnBurst(x, y, emoji, n) {
 
 /* ---------------- draw ---------------- */
 function draw() {
+  if (!game) return;
   if (game.mode === "surf") { drawSurf(); return; }
   if (game.mode === "board") { drawBoard(); return; }
   const g = game, world = g.world, p = g.player;
@@ -1972,6 +2356,28 @@ function draw() {
     ctx.ellipse(cx2 - 30, cy2 - 6, 26, 10, 0, 0, 6.29);
     ctx.fill();
   }
+
+  /* far skyline — hazy, slow-moving silhouette for atmospheric depth */
+  ctx.fillStyle = mixColor(world.hills, world.sky[1], .6);
+  ctx.globalAlpha = .5;
+  const farOff = -(g.camX * .08) % 900;
+  for (let x = farOff - 900; x < W + 900; x += 900) {
+    ctx.beginPath(); ctx.arc(x + 450, 500, 150, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 180, 510, 110, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 720, 510, 110, Math.PI, 0); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* ambient drifting particles for extra atmosphere */
+  ctx.font = "16px serif";
+  ctx.globalAlpha = .35;
+  const ambientEmoji = world.night ? "✨" : world.deco[0];
+  for (let i = 0; i < 8; i++) {
+    const driftX = (((i * 211 - g.camX * .35 - g.time * 14) % (W + 200)) + (W + 200)) % (W + 200) - 100;
+    const driftY = 60 + (i * 53) % 320 + Math.sin(g.time * .8 + i) * 14;
+    ctx.fillText(ambientEmoji, driftX, driftY);
+  }
+  ctx.globalAlpha = 1;
 
   /* two parallax layers of hills */
   ctx.fillStyle = world.hills;
@@ -2098,16 +2504,68 @@ function draw() {
   ctx.restore();
 
   drawHud();
+  drawVignette();
 }
 
-function roundRect(x, y, w, h, r) {
+/* subtle vignette for a more cinematic frame */
+function drawVignette() {
+  const vig = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .8);
+  vig.addColorStop(0, "rgba(0,0,0,0)");
+  vig.addColorStop(1, "rgba(0,0,0,.22)");
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* mix two #rrggbb colours together (t=0 -> a, t=1 -> b) */
+function mixColor(a, b, t) {
+  const na = parseInt(a.slice(1), 16), nb = parseInt(b.slice(1), 16);
+  const ar = (na >> 16) & 255, ag = (na >> 8) & 255, ab = na & 255;
+  const br = (nb >> 16) & 255, bg = (nb >> 8) & 255, bb = nb & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bch = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${bch})`;
+}
+
+function roundRectPath(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
   ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
+}
+function roundRect(x, y, w, h, r) {
+  roundRectPath(x, y, w, h, r);
   ctx.fill();
+}
+function strokeRoundRect(x, y, w, h, r) {
+  roundRectPath(x, y, w, h, r);
+  ctx.stroke();
+}
+
+/* small vector heart used for the HUD lives counter */
+function drawHeart(cx, cy, s, filled) {
+  const t = s * .3;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + t);
+  ctx.bezierCurveTo(cx, cy, cx - s / 2, cy, cx - s / 2, cy + t);
+  ctx.bezierCurveTo(cx - s / 2, cy + (s + t) / 2, cx, cy + (s + t) / 2, cx, cy + s);
+  ctx.bezierCurveTo(cx, cy + (s + t) / 2, cx + s / 2, cy + (s + t) / 2, cx + s / 2, cy + t);
+  ctx.bezierCurveTo(cx + s / 2, cy, cx, cy, cx, cy + t);
+  ctx.closePath();
+  if (filled) {
+    const grad = ctx.createLinearGradient(cx, cy - s * .1, cx, cy + s);
+    grad.addColorStop(0, "#ff96ad");
+    grad.addColorStop(1, "#e8425f");
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = "rgba(255,255,255,.12)";
+  }
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = filled ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.3)";
+  ctx.stroke();
 }
 
 /* ================================================================
@@ -2412,26 +2870,49 @@ function drawBoss() {
 function drawHud() {
   const g = game, p = g.player, world = g.world;
 
-  /* translucent top bar */
-  ctx.fillStyle = "rgba(13,16,38,.5)";
-  roundRect(10, 8, W - 20, 46, 14);
+  /* translucent top bar with a brighter glass highlight */
+  ctx.fillStyle = "rgba(13,16,38,.62)";
+  roundRect(10, 8, W - 20, 50, 15);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.stroke();
 
-  /* hearts (right) */
-  ctx.font = "23px serif";
-  ctx.textAlign = "right";
-  let hearts = "";
-  for (let i = 0; i < 3; i++) hearts = (i < p.hp ? "❤️" : "🖤") + hearts;
-  ctx.fillText(hearts, W - 24, 40);
+  /* hearts (right), with a soft drop shadow to make them pop */
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.4)";
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 2;
+  for (let i = 0; i < 3; i++) drawHeart(W - 34 - i * 30, 18, 26, i < p.hp);
+  ctx.restore();
 
-  /* items counter (left, LTR so digits keep order) */
+  /* items counter (left) — icon badge + count + progress strip */
   if (!world.boss) {
-    ctx.font = "700 19px Rubik";
+    const itemIcon = Array.isArray(world.item) ? "🎁" : world.item;
+    ctx.beginPath();
+    ctx.arc(35, 33, 19, 0, 6.29);
+    ctx.fillStyle = "rgba(255,255,255,.22)";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,255,255,.45)";
+    ctx.stroke();
+    ctx.font = "24px serif";
+    ctx.textAlign = "center";
+    ctx.fillText(itemIcon, 35, 42);
+
+    ctx.font = "800 22px Rubik";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.direction = "ltr";
-    const itemIcon = Array.isArray(world.item) ? "🎁" : world.item;
-    ctx.fillText(`${itemIcon} ${g.collected} / ${world.need}`, 26, 39);
+    ctx.fillText(`${g.collected} / ${world.need}`, 64, 41);
     ctx.direction = "inherit";
+
+    const frac = world.need ? Math.min(1, g.collected / world.need) : 0;
+    ctx.fillStyle = "rgba(255,255,255,.25)";
+    roundRect(24, 51, W - 48, 6, 3);
+    if (frac > 0) {
+      ctx.fillStyle = "#ffd93d";
+      roundRect(24, 51, (W - 48) * frac, 6, 3);
+    }
   }
 
   /* level name (center) */
@@ -2440,22 +2921,45 @@ function drawHud() {
   ctx.fillStyle = "rgba(255,255,255,.95)";
   ctx.fillText(`${LEVELS[state.current].grade} — ${LEVELS[state.current].name}`, W / 2, 38);
 
-  /* full indicator */
-  if (p.full) {
-    ctx.font = "700 15px Rubik";
-    ctx.fillStyle = "#ffd93d";
-    ctx.fillText("X = לירות כוכב! ⭐", W / 2, 76);
+  /* boss hp bar — segmented, glows red when low */
+  if (g.boss) {
+    const segGap = 5, segN = g.boss.maxHp, bw = 340, bx = (W - bw) / 2, by = 66, bh = 20;
+    const segW = (bw - segGap * (segN - 1)) / segN;
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    roundRect(bx - 4, by - 4, bw + 8, bh + 8, 14);
+    for (let i = 0; i < segN; i++) {
+      const sx = bx + i * (segW + segGap);
+      if (i < g.boss.hp) {
+        const grad = ctx.createLinearGradient(sx, by, sx, by + bh);
+        grad.addColorStop(0, "#dcb6ff");
+        grad.addColorStop(1, "#a855f7");
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,.22)";
+      }
+      roundRect(sx, by, segW, bh, 6);
+    }
+    if (g.boss.hp > 0 && g.boss.hp <= 2) {
+      const pulse = .35 + .35 * Math.sin(g.time * 8);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = `rgba(232,37,44,${pulse})`;
+      strokeRoundRect(bx - 4, by - 4, bw + 8, bh + 8, 14);
+    }
   }
 
-  /* boss hp bar */
-  if (g.boss) {
-    const bw = 320, bx = (W - bw) / 2;
-    ctx.fillStyle = "rgba(255,255,255,.35)";
-    roundRect(bx, 62, bw, 16, 8);
-    if (g.boss.hp > 0) {
-      ctx.fillStyle = "#b455e8";
-      roundRect(bx, 62, Math.max(14, bw * (g.boss.hp / g.boss.maxHp)), 16, 8);
-    }
+  /* "ready to fire" indicator */
+  if (p.full) {
+    const pulse = .8 + .2 * Math.sin(g.time * 6);
+    const y = g.boss ? 110 : 80;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = "#ffd93d";
+    roundRect(W / 2 - 105, y - 20, 210, 32, 16);
+    ctx.restore();
+    ctx.fillStyle = "#5a4400";
+    ctx.font = "800 17px Rubik";
+    ctx.textAlign = "center";
+    ctx.fillText("⭐ X = לירות כוכב! ⭐", W / 2, y);
   }
 }
 
@@ -2472,7 +2976,7 @@ function renderCharSelect() {
   CHARACTERS.forEach((ch, i) => {
     const b = document.createElement("button");
     b.className = "char-opt" + (i === state.charIdx ? " selected" : "");
-    b.innerHTML = `<img src="${buildSprite(i, "idle", "normal").toDataURL()}" alt=""><div>${ch.emoji} ${ch.name}</div>`;
+    b.innerHTML = `<img src="${buildSprite(i, "idle", "normal").toDataURL()}" alt=""><div class="char-name">${ch.emoji} ${ch.name}</div>`;
     b.onclick = () => {
       state.charIdx = i;
       Object.keys(SPRITES).forEach(k => delete SPRITES[k]);
