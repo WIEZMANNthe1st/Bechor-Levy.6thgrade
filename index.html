@@ -1384,6 +1384,7 @@ const cv = $("#game-canvas");
 const ctx = cv.getContext("2d");
 const W = 960, H = 540;
 const GRAV = 2300, RUN = 280, JUMP_V = -760, FLAP_V = -330;
+const MAX_AMMO = 3;
 
 let game = null;   // active game state
 let rafId = null;
@@ -1456,6 +1457,22 @@ document.addEventListener("touchend", e => {
   if (el) el.addEventListener("contextmenu", e => e.preventDefault());
 });
 
+/* pause the loop and clear stuck keys/touches when the page is hidden
+   (app switch, screen rotation, etc.) so nothing hurts the player while
+   they can't see or control the screen */
+document.addEventListener("visibilitychange", () => {
+  Object.keys(keys).forEach(k => keys[k] = false);
+  jumpPressed = false;
+  suckPressed = false;
+  if (document.hidden) {
+    cancelAnimationFrame(rafId);
+  } else if (game && !game.over) {
+    lastT = performance.now();
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+});
+
 function startEngine(levelIdx) {
   const world = WORLDS[levelIdx];
 
@@ -1482,7 +1499,7 @@ function startEngine(levelIdx) {
     world, plats, items: itemList, enemies, groundDeco,
     player: {
       x: 60, y: 380, vx: 0, vy: 0, r: 21,
-      facing: 1, onGround: false, puffed: false, full: false,
+      facing: 1, onGround: false, puffed: false, ammo: 0,
       hp: 3, inv: 0, inhaling: false, anim: 0
     },
     stars: [],          // spit projectiles
@@ -2109,9 +2126,9 @@ function update(dt) {
   if (p.y > H + 120) { gameOver("נפלתם לבור! אפילו בקורונה לא נפלנו ככה 😅"); return; }
 
   /* --- inhale / spit --- */
-  p.inhaling = keys.suck && !p.full;
-  if (suckPressed && p.full) {
-    p.full = false;
+  p.inhaling = keys.suck && p.ammo === 0;
+  if (suckPressed && p.ammo > 0) {
+    p.ammo--;
     g.stars.push({ x: p.x + p.facing * 26, y: p.y - 4, vx: p.facing * 640, life: 1.4 });
     playSound("spit");
   }
@@ -2132,7 +2149,7 @@ function update(dt) {
         e.sucked += dt;
         if (Math.abs(e.x - p.x) < 26 && Math.abs(e.y - p.y) < 30) {
           e.dead = true;
-          p.full = true;
+          p.ammo = Math.min(p.ammo + 1, MAX_AMMO);
           playSound("good");
           spawnBurst(e.x, e.y, "💨", 4);
           continue;
@@ -2148,9 +2165,9 @@ function update(dt) {
     /* touch handling */
     if (Math.abs(e.x - p.x) < e.r + p.r - 8 && Math.abs(e.y - p.y) < e.r + p.r - 8) {
       if (world.boss && e.type === "fly") {
-        /* in the boss fight, just touching a flying book loads it — ready to throw back */
+        /* in the boss fight, touching a flying book loads another star — stack up to MAX_AMMO */
         e.dead = true;
-        if (!p.full) p.full = true;
+        p.ammo = Math.min(p.ammo + 1, MAX_AMMO);
         playSound("good");
         spawnBurst(e.x, e.y, "✨", 4);
         continue;
@@ -2789,7 +2806,7 @@ function drawPlayer() {
   const legs = !p.onGround ? "air"
     : run ? (Math.floor(p.anim * 9) % 2 ? "walk1" : "walk2")
     : "idle";
-  const face = p.inhaling ? "inhale" : (p.full ? "full" : "normal");
+  const face = p.inhaling ? "inhale" : (p.ammo > 0 ? "full" : "normal");
   const spr = getSprite(legs, face);
   const w = SPR_W * 2, h = SPR_H * 2;
   const feetY = p.y + p.r;
@@ -2959,7 +2976,7 @@ function drawHud() {
   }
 
   /* "ready to fire" indicator */
-  if (p.full) {
+  if (p.ammo > 0) {
     const pulse = .8 + .2 * Math.sin(g.time * 6);
     const y = g.boss ? 110 : 80;
     ctx.save();
@@ -2970,7 +2987,8 @@ function drawHud() {
     ctx.fillStyle = "#5a4400";
     ctx.font = "800 17px Rubik";
     ctx.textAlign = "center";
-    ctx.fillText("⭐ X = לירות כוכב! ⭐", W / 2, y);
+    const stars = "⭐".repeat(p.ammo);
+    ctx.fillText(`${stars} X = לירות כוכב! ${stars}`, W / 2, y);
   }
 }
 
