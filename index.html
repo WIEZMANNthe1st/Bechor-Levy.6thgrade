@@ -32,6 +32,15 @@
     overscroll-behavior: none;
     -webkit-text-size-adjust: 100%;
     position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* but let people select/copy text in the name field as usual */
+  input[type=text] {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
   }
   /* soft ambient glows behind every screen */
   body::before {
@@ -365,7 +374,7 @@
       flex-direction: column;
       gap: 14px;
     }
-    body.touch #touch-bar .tb-group:first-child { left: max(6px, env(safe-area-inset-left)); }
+    body.touch #touch-bar .tb-group:first-child { left: max(6px, env(safe-area-inset-left)); flex-direction: row; }
     body.touch #touch-bar .tb-group:last-child  { right: max(6px, env(safe-area-inset-right)); }
     body.touch .touch-btn {
       width: 60px; height: 60px;
@@ -584,10 +593,10 @@
         </svg>
       </div>
       <h1>שורדים את היסודי</h1>
-      <div class="hero-sub">🏫 בית הספר בכור לוי · מחזור ו'</div>
+      <div class="hero-sub">🏫 בית הספר בכור לוי · ו'3</div>
     </div>
     <p class="sub" style="margin-top:12px">
-      הרפתקת פלטפורמה אמיתית של מחזור ו' בבית הספר <b>בכור לוי</b><br>
+      הרפתקת פלטפורמה אמיתית של ו'3 בבית הספר <b>בכור לוי</b><br>
       רוצו, קפצו, רחפו ושאפו אויבים — דרך שש שנים מטורפות,<br>
       <b>מכיתה א' ועד קרב הבוס של החטיבה!</b>
     </p>
@@ -639,12 +648,12 @@
   </div>
   <div id="touch-bar">
     <div class="tb-group">
-      <div class="touch-btn" id="tc-suck">🌀</div>
-      <div class="touch-btn" id="tc-jump">🎈</div>
-    </div>
-    <div class="tb-group">
       <div class="touch-btn" id="tc-left">◀</div>
       <div class="touch-btn" id="tc-right">▶</div>
+    </div>
+    <div class="tb-group">
+      <div class="touch-btn" id="tc-suck">🌀</div>
+      <div class="touch-btn" id="tc-jump">🎈</div>
     </div>
   </div>
 </section>
@@ -2282,15 +2291,17 @@ function updateBoss(dt) {
   }
   b.x = Math.max(80, Math.min(880, b.x));
 
-  /* spawn flying books */
+  /* spawn flying books — scattered far from the boss, on either side */
   b.spawnT -= dt;
   const alive = g.enemies.filter(e => !e.dead).length;
   if (b.spawnT <= 0 && alive < 2) {
     b.spawnT = 3.2;
     const e = makeEnemy(g.world, b.x, b.y - b.h - 10, "fly");
     e.baseY = 240 + Math.random() * 120;
+    const side = Math.random() < .5 ? -1 : 1;
+    e.x = Math.max(70, Math.min(g.world.width - 70, b.x + side * (260 + Math.random() * 220)));
     e.homeX = e.x;
-    e.range = 400;
+    e.range = 150;
     g.enemies.push(e);
     spawnBurst(b.x, b.y - b.h, "📚", 3);
   }
